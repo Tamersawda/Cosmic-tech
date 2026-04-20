@@ -230,7 +230,7 @@ class _BasicInformationState extends State<BasicInformation> {
                           children: [
                             const DoctorSectionHeader(
                               icon: Icons.location_on_outlined,
-                              title: 'Clinic / Hospital Address',
+                              title: 'Clinic / Personal Address',
                               iconColor: AppColors.accentGreen,
                             ),
 

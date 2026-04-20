@@ -1,0 +1,15 @@
+$kind: http-request
+description: Update appointment status
+url: "{{baseUrl}}/api/appointments/{{appointmentId}}"
+method: PUT
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{doctorToken}}
+body:
+  type: text
+  content: |-
+    {
+      "status": "confirmed",
+      "notes": "Patient confirmed the appointment"
+    }
+order: 5000

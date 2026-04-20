@@ -15,12 +15,12 @@ CREATE TABLE IF NOT EXISTS users (
     email                       VARCHAR(255)    NOT NULL,
     password                    VARCHAR(255)    NOT NULL,          -- bcrypt/argon2 hashed
     user_type                   ENUM('admin', 'doctor', 'patient') NOT NULL,
-    is_active                   TINYINT(1)      NOT NULL DEFAULT 1,
-    is_email_verified           TINYINT(1)      NOT NULL DEFAULT 0,
+    is_active                   TINYINT         NOT NULL DEFAULT 1,
+    is_email_verified           TINYINT         NOT NULL DEFAULT 0,
     email_verification_otp      VARCHAR(255)    NULL,               -- hashed OTP (6 digits)
     email_verification_expires  DATETIME        NULL,               -- OTP expiry timestamp
-    created_at                  DATETIME        NOT NULL DEFAULT UTC_TIMESTAMP(),
-    updated_at                  DATETIME        NOT NULL DEFAULT UTC_TIMESTAMP() ON UPDATE UTC_TIMESTAMP(),
+    created_at                  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at                  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),
     UNIQUE KEY uq_users_email (email),
@@ -52,14 +52,14 @@ CREATE TABLE IF NOT EXISTS doctor_profiles (
     languages_spoken        JSON            NOT NULL,       -- ["English", "Malayalam"]
 
     -- Consultation settings
-    video_enabled           TINYINT(1)      NOT NULL DEFAULT 1,
+    video_enabled           TINYINT         NOT NULL DEFAULT 1,
     video_rate              DECIMAL(10, 2)  NULL,
-    audio_enabled           TINYINT(1)      NOT NULL DEFAULT 1,
+    audio_enabled           TINYINT         NOT NULL DEFAULT 1,
     audio_rate              DECIMAL(10, 2)  NULL,
     follow_up_rate          DECIMAL(10, 2)  NULL,
     consultation_duration   ENUM('30min', '45min', '60min') NOT NULL DEFAULT '60min',
     buffer_time             ENUM('5min', '10min', '15min', '30min') NOT NULL DEFAULT '10min',
-    instant_booking_enabled TINYINT(1)      NOT NULL DEFAULT 0,
+    instant_booking_enabled TINYINT         NOT NULL DEFAULT 0,
 
     -- Location
     street_address          VARCHAR(255)    NULL,
@@ -71,17 +71,17 @@ CREATE TABLE IF NOT EXISTS doctor_profiles (
     longitude               DECIMAL(10, 7)  NULL,
 
     -- Verification
-    is_verified             TINYINT(1)      NOT NULL DEFAULT 0,
+    is_verified             TINYINT         NOT NULL DEFAULT 0,
     verification_status     ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
-    trust_badge_earned      TINYINT(1)      NOT NULL DEFAULT 0,
+    trust_badge_earned      TINYINT         NOT NULL DEFAULT 0,
 
     -- Onboarding
     onboarding_current_step     TINYINT     NOT NULL DEFAULT 1,
     onboarding_completed_steps  JSON        NULL,           -- [1, 2, 3]
     onboarding_percentage       TINYINT     NOT NULL DEFAULT 0,
 
-    created_at              DATETIME        NOT NULL DEFAULT UTC_TIMESTAMP(),
-    updated_at              DATETIME        NOT NULL DEFAULT UTC_TIMESTAMP() ON UPDATE UTC_TIMESTAMP(),
+    created_at              DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at              DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (user_id),
     UNIQUE KEY uq_doctor_license (license_number),
@@ -123,7 +123,7 @@ CREATE TABLE IF NOT EXISTS doctor_weekly_schedule (
     id              CHAR(36)    NOT NULL DEFAULT (UUID()),
     doctor_id       CHAR(36)    NOT NULL,
     day_of_week     TINYINT     NOT NULL,           -- 0=Sunday ... 6=Saturday
-    is_available    TINYINT(1)  NOT NULL DEFAULT 0,
+    is_available    TINYINT     NOT NULL DEFAULT 0,
     start_time      TIME        NULL,
     end_time        TIME        NULL,
     break_times     JSON        NULL,               -- [{"start":"13:00","end":"14:00"}]
@@ -162,8 +162,8 @@ CREATE TABLE IF NOT EXISTS patient_profiles (
     emergency_contact_relationship  VARCHAR(100)    NULL,
     emergency_contact_phone         VARCHAR(30)     NULL,
 
-    created_at  DATETIME    NOT NULL DEFAULT UTC_TIMESTAMP(),
-    updated_at  DATETIME    NOT NULL DEFAULT UTC_TIMESTAMP() ON UPDATE UTC_TIMESTAMP(),
+    created_at  DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (user_id),
     INDEX idx_patient_phone (phone_number),
@@ -198,8 +198,8 @@ CREATE TABLE IF NOT EXISTS appointments (
     partner_name        VARCHAR(200)    NULL,
     partner_email       VARCHAR(255)    NULL,
 
-    created_at          DATETIME        NOT NULL DEFAULT UTC_TIMESTAMP(),
-    updated_at          DATETIME        NOT NULL DEFAULT UTC_TIMESTAMP() ON UPDATE UTC_TIMESTAMP(),
+    created_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),
 
@@ -231,7 +231,7 @@ CREATE TABLE IF NOT EXISTS consultation_sessions (
     duration_minutes    SMALLINT        NULL,
     notes               TEXT            NULL,
     prescriptions       JSON            NULL,           -- ["Medication A 10mg"]
-    follow_up_required  TINYINT(1)      NOT NULL DEFAULT 0,
+    follow_up_required  TINYINT         NOT NULL DEFAULT 0,
     next_follow_up_date DATE            NULL,
 
     PRIMARY KEY (id),
@@ -253,8 +253,8 @@ CREATE TABLE IF NOT EXISTS messages (
     content         TEXT            NOT NULL,
     message_type    ENUM('text', 'image', 'document') NOT NULL DEFAULT 'text',
     attachment_url  VARCHAR(500)    NULL,
-    is_read         TINYINT(1)      NOT NULL DEFAULT 0,
-    created_at      DATETIME        NOT NULL DEFAULT UTC_TIMESTAMP(),
+    is_read         TINYINT         NOT NULL DEFAULT 0,
+    created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),
     INDEX idx_msg_appointment_time (appointment_id, created_at),
@@ -280,8 +280,8 @@ CREATE TABLE IF NOT EXISTS reviews (
     rating          TINYINT         NOT NULL,
     title           VARCHAR(200)    NULL,
     comment         TEXT            NULL,
-    is_verified     TINYINT(1)      NOT NULL DEFAULT 0,
-    created_at      DATETIME        NOT NULL DEFAULT UTC_TIMESTAMP(),
+    is_verified     TINYINT         NOT NULL DEFAULT 0,
+    created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),
     UNIQUE KEY uq_review_patient_appointment (patient_id, appointment_id),
@@ -312,7 +312,7 @@ CREATE TABLE IF NOT EXISTS documents (
     document_type       ENUM('license', 'certificate', 'qualification', 'identity') NOT NULL,
     file_url            VARCHAR(500) NOT NULL,
     file_name           VARCHAR(255) NOT NULL,
-    uploaded_at         DATETIME    NOT NULL DEFAULT UTC_TIMESTAMP(),
+    uploaded_at         DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     verification_status ENUM('pending', 'verified', 'rejected') NOT NULL DEFAULT 'pending',
 
     PRIMARY KEY (id),
@@ -340,9 +340,9 @@ CREATE TABLE IF NOT EXISTS notifications (
                 ) NOT NULL,
     title       VARCHAR(255)    NOT NULL,
     message     TEXT            NOT NULL,
-    is_read     TINYINT(1)      NOT NULL DEFAULT 0,
+    is_read     TINYINT         NOT NULL DEFAULT 0,
     related_id  CHAR(36)        NULL,               -- FK to appointment, review, etc.
-    created_at  DATETIME        NOT NULL DEFAULT UTC_TIMESTAMP(),
+    created_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),
     INDEX idx_notif_user_read (user_id, is_read),
@@ -362,8 +362,8 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
     user_id     CHAR(36)        NOT NULL,
     token       VARCHAR(512)    NOT NULL,
     expires_at  DATETIME        NOT NULL,
-    revoked     TINYINT(1)      NOT NULL DEFAULT 0,
-    created_at  DATETIME        NOT NULL DEFAULT UTC_TIMESTAMP(),
+    revoked     TINYINT         NOT NULL DEFAULT 0,
+    created_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),
     UNIQUE KEY uq_token (token(255)),

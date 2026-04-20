@@ -1,0 +1,16 @@
+$kind: http-request
+description: Should return 400 Bad Request
+url: "{{baseUrl}}/api/auth/register"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "email": "admin@example.com",
+      "password": "AdminPassword123",
+      "userType": "admin",
+      "fullName": "Admin User"
+    }
+order: 13000

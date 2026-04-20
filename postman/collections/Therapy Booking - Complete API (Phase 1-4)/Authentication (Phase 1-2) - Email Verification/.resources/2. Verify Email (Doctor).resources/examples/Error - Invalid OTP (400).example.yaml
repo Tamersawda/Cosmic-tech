@@ -1,0 +1,25 @@
+$kind: http-example
+request:
+  url: "{{baseUrl}}/api/auth/verify-email"
+  method: POST
+  headers:
+    Content-Type: application/json
+  body:
+    type: text
+    content: |-
+      {
+        "email": "{{doctorEmail}}",
+        "otp": "123456"
+      }
+response:
+  statusCode: 400
+  statusText: OK
+  body:
+    type: text
+    content: |-
+      {
+        "success": false,
+        "message": "Invalid or expired OTP",
+        "error": "INVALID_OTP"
+      }
+order: 2000

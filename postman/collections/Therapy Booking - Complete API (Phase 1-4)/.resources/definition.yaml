@@ -1,0 +1,17 @@
+$kind: collection
+description: "Complete test collection for all phases: Authentication (1-2),
+  Doctor/Patient Profiles & Slots (3), Appointments/Consultations/Messaging (4)"
+variables:
+  baseUrl: http://localhost/Therapy%20Booking/backend
+  doctorToken: paste_doctor_token_here
+  patientToken: paste_patient_token_here
+  doctorId: doctor_id_here
+  patientId: patient_id_here
+  doctorEmail: doctor@example.com
+  patientEmail: patient@example.com
+  doctorProfileId: doctor_profile_id
+  patientProfileId: patient_profile_id
+  slotId: slot_id
+  appointmentId: appointment_id
+  consultationId: consultation_id
+  messageId: message_id

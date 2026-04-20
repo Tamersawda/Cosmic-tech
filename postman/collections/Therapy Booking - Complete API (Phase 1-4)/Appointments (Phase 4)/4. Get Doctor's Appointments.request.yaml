@@ -1,0 +1,7 @@
+$kind: http-request
+description: Get all appointments for the current doctor
+url: "{{baseUrl}}/api/appointments/doctor"
+method: GET
+headers:
+  Authorization: Bearer {{doctorToken}}
+order: 4000

@@ -1,0 +1,7 @@
+$kind: http-request
+description: Get available slots for a specific doctor
+url: "{{baseUrl}}/api/available-slots/doctor/{{doctorId}}"
+method: GET
+headers:
+  Authorization: Bearer {{patientToken}}
+order: 2000

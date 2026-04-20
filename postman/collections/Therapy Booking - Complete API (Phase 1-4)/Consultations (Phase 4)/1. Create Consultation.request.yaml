@@ -1,0 +1,28 @@
+$kind: http-request
+description: Create a new consultation record
+url: "{{baseUrl}}/api/consultations"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{doctorToken}}
+body:
+  type: text
+  content: |-
+    {
+      "appointment_id": "{{appointmentId}}",
+      "patient_id": "{{patientId}}",
+      "doctor_id": "{{doctorId}}",
+      "consultation_date": "2026-04-15",
+      "consultation_time": "10:00:00",
+      "status": "scheduled",
+      "consultation_type": "initial"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      var jsonData = pm.response.json();
+      if (jsonData.success && jsonData.data) {
+          pm.collectionVariables.set("consultationId", jsonData.data.id);
+      }
+    language: text/javascript
+order: 1000

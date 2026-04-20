@@ -1,0 +1,25 @@
+$kind: http-request
+description: Send a message to another user
+url: "{{baseUrl}}/api/messages"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{patientToken}}
+body:
+  type: text
+  content: >-
+    {
+      "recipient_id": "{{doctorId}}",
+      "subject": "Question about meditation techniques",
+      "message_body": "Hi Dr. Smith, I wanted to ask about the meditation techniques you mentioned during our last session. Could you provide some resources?",
+      "message_type": "text"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      var jsonData = pm.response.json();
+      if (jsonData.success && jsonData.data) {
+          pm.collectionVariables.set("messageId", jsonData.data.id);
+      }
+    language: text/javascript
+order: 1000

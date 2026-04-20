@@ -1,0 +1,18 @@
+$kind: http-request
+description: Update doctor profile
+url: "{{baseUrl}}/api/doctor-profile/{{doctorProfileId}}"
+method: PUT
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{doctorToken}}
+body:
+  type: text
+  content: >-
+    {
+      "specialization": "Child Psychology & Adolescent Therapy",
+      "bio": "Highly experienced psychologist specializing in child and adolescent behavioral issues",
+      "experience_years": 9,
+      "consultation_fee": 175.00,
+      "consultation_duration_minutes": 60
+    }
+order: 3000

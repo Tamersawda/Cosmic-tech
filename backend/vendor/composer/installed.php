@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'therapy-booking/backend',
-        'pretty_version' => '1.0.0+no-version-set',
-        'version' => '1.0.0.0',
-        'reference' => null,
+        'pretty_version' => 'dev-main',
+        'version' => 'dev-main',
+        'reference' => 'f23bde6f3bf051b54316ce9dcee40cd2a99f0859',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -11,9 +11,9 @@
     ),
     'versions' => array(
         'therapy-booking/backend' => array(
-            'pretty_version' => '1.0.0+no-version-set',
-            'version' => '1.0.0.0',
-            'reference' => null,
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
+            'reference' => 'f23bde6f3bf051b54316ce9dcee40cd2a99f0859',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

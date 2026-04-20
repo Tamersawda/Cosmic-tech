@@ -1,0 +1,7 @@
+$kind: http-request
+description: Get all sent messages
+url: "{{baseUrl}}/api/messages/sent"
+method: GET
+headers:
+  Authorization: Bearer {{patientToken}}
+order: 3000

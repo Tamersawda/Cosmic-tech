@@ -1,0 +1,7 @@
+$kind: http-request
+description: Get all appointments for the current patient
+url: "{{baseUrl}}/api/appointments/patient"
+method: GET
+headers:
+  Authorization: Bearer {{patientToken}}
+order: 3000

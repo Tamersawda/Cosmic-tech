@@ -1,0 +1,14 @@
+$kind: http-request
+description: Update slot availability status
+url: "{{baseUrl}}/api/available-slots/{{slotId}}"
+method: PUT
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{doctorToken}}
+body:
+  type: text
+  content: |-
+    {
+      "is_available": false
+    }
+order: 4000

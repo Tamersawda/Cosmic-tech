@@ -1,0 +1,25 @@
+$kind: http-request
+description: Login as doctor. Email must be verified first, otherwise returns
+  EMAIL_NOT_VERIFIED error. Returns access token and optional refresh token.
+url: "{{baseUrl}}/api/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "email": "{{doctorEmail}}",
+      "password": "DocPassword123!"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      var jsonData = pm.response.json();
+      if (jsonData.success && jsonData.data && jsonData.data.token) {
+          pm.collectionVariables.set("doctorToken", jsonData.data.token);
+          console.log('Doctor logged in successfully');
+      }
+    language: text/javascript
+examples: ./.resources/7. Login Doctor.resources/examples
+order: 7000

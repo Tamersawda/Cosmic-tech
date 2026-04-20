@@ -1,0 +1,7 @@
+$kind: http-request
+description: Should return 401 Unauthorized
+url: "{{baseUrl}}/api/me"
+method: GET
+headers:
+  Authorization: Bearer invalid.token.here
+order: 18000

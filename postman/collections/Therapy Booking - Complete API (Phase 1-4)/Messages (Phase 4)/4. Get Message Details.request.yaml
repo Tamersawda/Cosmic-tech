@@ -1,0 +1,7 @@
+$kind: http-request
+description: Get details of a specific message
+url: "{{baseUrl}}/api/messages/{{messageId}}"
+method: GET
+headers:
+  Authorization: Bearer {{doctorToken}}
+order: 4000

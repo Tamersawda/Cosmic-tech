@@ -1,0 +1,17 @@
+$kind: http-request
+description: Update consultation with notes and prescription
+url: "{{baseUrl}}/api/consultations/{{consultationId}}"
+method: PUT
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{doctorToken}}
+body:
+  type: text
+  content: >-
+    {
+      "status": "completed",
+      "notes": "Patient presented with anxiety symptoms. Discussed coping mechanisms and prescribed breathing exercises.",
+      "prescription": "Continue current medication. Follow up in 2 weeks.",
+      "follow_up_date": "2026-05-01"
+    }
+order: 3000

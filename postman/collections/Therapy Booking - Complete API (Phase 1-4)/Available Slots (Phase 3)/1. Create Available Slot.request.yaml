@@ -1,0 +1,25 @@
+$kind: http-request
+description: Create a new available time slot
+url: "{{baseUrl}}/api/available-slots"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{doctorToken}}
+body:
+  type: text
+  content: |-
+    {
+      "slot_date": "2026-04-15",
+      "slot_time": "10:00:00",
+      "duration_minutes": 60,
+      "is_available": true
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      var jsonData = pm.response.json();
+      if (jsonData.success && jsonData.data) {
+          pm.collectionVariables.set("slotId", jsonData.data.id);
+      }
+    language: text/javascript
+order: 1000

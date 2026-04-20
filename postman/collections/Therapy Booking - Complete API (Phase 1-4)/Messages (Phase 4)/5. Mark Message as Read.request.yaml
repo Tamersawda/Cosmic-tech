@@ -1,0 +1,14 @@
+$kind: http-request
+description: Mark a message as read
+url: "{{baseUrl}}/api/messages/{{messageId}}"
+method: PUT
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{doctorToken}}
+body:
+  type: text
+  content: |-
+    {
+      "is_read": true
+    }
+order: 5000

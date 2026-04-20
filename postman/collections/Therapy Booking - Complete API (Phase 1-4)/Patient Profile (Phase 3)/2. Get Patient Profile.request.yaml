@@ -1,0 +1,7 @@
+$kind: http-request
+description: Get patient profile details
+url: "{{baseUrl}}/api/patient-profile/{{patientProfileId}}"
+method: GET
+headers:
+  Authorization: Bearer {{patientToken}}
+order: 2000

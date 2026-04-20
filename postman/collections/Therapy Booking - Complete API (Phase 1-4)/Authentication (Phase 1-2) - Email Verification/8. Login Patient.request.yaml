@@ -1,0 +1,24 @@
+$kind: http-request
+description: Login as patient. Email must be verified first, otherwise returns
+  EMAIL_NOT_VERIFIED error. Returns access token and optional refresh token.
+url: "{{baseUrl}}/api/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "email": "{{patientEmail}}",
+      "password": "PatPassword123!"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      var jsonData = pm.response.json();
+      if (jsonData.success && jsonData.data && jsonData.data.token) {
+          pm.collectionVariables.set("patientToken", jsonData.data.token);
+          console.log('Patient logged in successfully');
+      }
+    language: text/javascript
+order: 8000

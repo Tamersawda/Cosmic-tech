@@ -1,0 +1,21 @@
+$kind: http-request
+description: Update patient profile
+url: "{{baseUrl}}/api/patient-profile/{{patientProfileId}}"
+method: PUT
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{patientToken}}
+body:
+  type: text
+  content: >-
+    {
+      "date_of_birth": "1995-05-15",
+      "gender": "Male",
+      "phone": "+1-555-0103",
+      "address": "789 Elm Street, Brooklyn, NY 11201",
+      "emergency_contact_name": "Jane Doe",
+      "emergency_contact_phone": "+1-555-0104",
+      "medical_history": "Anxiety disorder, depression, previously treated with therapy",
+      "current_medications": "Sertraline 100mg daily"
+    }
+order: 3000

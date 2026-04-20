@@ -1,0 +1,28 @@
+$kind: http-request
+description: "Register a new patient account. Returns user ID and email. OTP
+  will be sent to email. Note: Tokens are NOT returned at registration - email
+  must be verified first."
+url: "{{baseUrl}}/api/auth/register"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "email": "patient_{{$timestamp}}@example.com",
+      "password": "PatPassword123!",
+      "userType": "patient",
+      "fullName": "John Doe"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      var jsonData = pm.response.json();
+      if (jsonData.success && jsonData.data) {
+          pm.collectionVariables.set("patientId", jsonData.data.id);
+          pm.collectionVariables.set("patientEmail", jsonData.data.email);
+          console.log('Patient registered. Email: ' + jsonData.data.email);
+      }
+    language: text/javascript
+order: 4000
