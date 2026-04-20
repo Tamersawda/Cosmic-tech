@@ -11,7 +11,7 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/core/utils/colors.dart';
 
 class AdminDocumentViewer extends StatelessWidget {
   /// Display label shown above the viewer (e.g. "Government ID").

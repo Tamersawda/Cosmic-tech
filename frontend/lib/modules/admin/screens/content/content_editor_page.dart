@@ -1,6 +1,6 @@
-import 'package:frontend/core/constants/responsive_data.dart';
+import 'package:frontend/core/utils/responsive_data.dart';
 import 'package:flutter/material.dart';
-import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/core/utils/colors.dart';
 import 'package:frontend/modules/admin/widgets/shared/admin_card_container.dart';
 import 'package:frontend/modules/admin/widgets/shared/admin_dropdown_field.dart';
 import 'package:frontend/modules/admin/widgets/shared/admin_text_field.dart';

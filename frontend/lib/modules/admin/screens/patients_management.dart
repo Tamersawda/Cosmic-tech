@@ -1,6 +1,6 @@
 import 'package:frontend/modules/admin/models/patient_model.dart';
 import 'package:frontend/modules/admin/screens/patient/patient_details_panel.dart';
-import 'package:frontend/core/constants/responsive_data.dart';
+import 'package:frontend/core/utils/responsive_data.dart';
 import 'package:frontend/modules/admin/widgets/shared/admin_card_container.dart';
 import 'package:frontend/modules/admin/widgets/shared/admin_page_header.dart';
 import 'package:frontend/modules/admin/widgets/shared/admin_text_field.dart';

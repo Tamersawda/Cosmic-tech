@@ -4,7 +4,7 @@
 
 import 'dart:io';
 import 'package:frontend/modules/admin/controllers/registration_controller.dart';
-import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/core/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';

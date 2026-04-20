@@ -4,7 +4,7 @@ import 'package:frontend/modules/admin/models/doctor_model.dart';
 import 'package:frontend/modules/admin/screens/doctor_registration/doctor_registration_form.dart';
 import 'package:frontend/modules/admin/screens/doctor_registration/doctor_review_panel.dart';
 import 'package:frontend/modules/shared/doctor_data_store.dart';
-import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/core/utils/colors.dart';
 import 'package:frontend/modules/admin/widgets/shared/admin_card_container.dart';
 import 'package:frontend/modules/admin/widgets/shared/admin_page_header.dart';
 import 'package:frontend/modules/admin/widgets/shared/admin_text_field.dart';

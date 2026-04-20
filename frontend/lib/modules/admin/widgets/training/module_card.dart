@@ -1,4 +1,4 @@
-import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/core/utils/colors.dart';
 import 'package:flutter/material.dart';
 
 class ModuleCard extends StatelessWidget {

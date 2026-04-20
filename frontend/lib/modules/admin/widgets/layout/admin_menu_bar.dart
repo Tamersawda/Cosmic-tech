@@ -1,5 +1,5 @@
-import 'package:frontend/core/constants/colors.dart';
-import 'package:frontend/core/constants/enums.dart';
+import 'package:frontend/core/utils/colors.dart';
+import 'package:frontend/core/utils/enums.dart';
 import 'package:frontend/modules/admin/widgets/layout/menu_tile.dart';
 import 'package:flutter/material.dart';
 

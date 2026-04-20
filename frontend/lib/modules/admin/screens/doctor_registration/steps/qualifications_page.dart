@@ -1,6 +1,6 @@
 import 'package:frontend/modules/admin/controllers/registration_controller.dart';
 import 'package:frontend/modules/admin/models/doctor_model.dart';
-import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/core/utils/colors.dart';
 import 'package:frontend/modules/admin/widgets/shared/admin_text_field.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';

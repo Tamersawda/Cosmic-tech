@@ -1,4 +1,4 @@
-import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/core/utils/colors.dart';
 import 'package:frontend/modules/admin/widgets/recent_notifications.dart';
 import 'package:frontend/modules/admin/widgets/shared/admin_card_container.dart';
 import 'package:frontend/modules/admin/widgets/shared/admin_dropdown_field.dart';

@@ -1,4 +1,4 @@
-import 'package:frontend/modules/auth/screens/landing_page.dart';
+import 'package:frontend/modules/auth/presentation/screens/landing_page.dart';
 import 'package:flutter/material.dart';
 
 void main() {

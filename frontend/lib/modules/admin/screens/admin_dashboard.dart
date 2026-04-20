@@ -1,5 +1,5 @@
-import 'package:frontend/core/constants/colors.dart';
-import 'package:frontend/core/constants/responsive_data.dart';
+import 'package:frontend/core/utils/colors.dart';
+import 'package:frontend/core/utils/responsive_data.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/modules/admin/widgets/dashboard_card.dart';
 import 'package:frontend/modules/admin/widgets/recent_appointments.dart';

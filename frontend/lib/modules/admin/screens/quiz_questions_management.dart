@@ -1,6 +1,6 @@
 import 'package:frontend/modules/admin/screens/quiz/add_quiz_question_page.dart';
-import 'package:frontend/core/constants/colors.dart';
-import 'package:frontend/core/constants/responsive_data.dart';
+import 'package:frontend/core/utils/colors.dart';
+import 'package:frontend/core/utils/responsive_data.dart';
 import 'package:frontend/modules/admin/widgets/shared/admin_page_header.dart';
 import 'package:flutter/material.dart';
 

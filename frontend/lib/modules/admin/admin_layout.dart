@@ -1,3 +1,4 @@
+import 'package:frontend/core/utils/enums.dart';
 import 'package:frontend/modules/admin/screens/admin_dashboard.dart';
 import 'package:frontend/modules/admin/screens/content_management_page.dart';
 import 'package:frontend/modules/admin/screens/doctor_management.dart';
@@ -8,11 +9,10 @@ import 'package:frontend/modules/admin/screens/settings_page.dart';
 import 'package:frontend/modules/admin/screens/support_and_complaints_page.dart';
 import 'package:frontend/modules/admin/screens/user_registration.dart';
 import 'package:frontend/modules/admin/screens/patients_management.dart';
-import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/core/utils/colors.dart';
 import 'package:frontend/modules/admin/widgets/layout/admin_menu_bar.dart';
-import 'package:frontend/core/constants/enums.dart';
 import 'package:frontend/modules/admin/widgets/layout/search_field.dart';
-import 'package:frontend/modules/doctor/screens/appointments_page.dart';
+import 'package:frontend/modules/doctor/presentation/screens/appointments_page.dart';
 import 'package:flutter/material.dart';
 
 class AdminLayout extends StatefulWidget {

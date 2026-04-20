@@ -1,5 +1,5 @@
 import 'package:frontend/modules/admin/screens/quiz_questions_management.dart';
-import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/core/utils/colors.dart';
 import 'package:frontend/modules/admin/widgets/shared/admin_card_container.dart';
 import 'package:frontend/modules/admin/widgets/shared/admin_text_field.dart';
 import 'package:flutter/material.dart';

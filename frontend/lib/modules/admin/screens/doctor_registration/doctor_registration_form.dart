@@ -9,7 +9,7 @@ import 'package:frontend/modules/admin/screens/doctor_registration/steps/profess
 import 'package:frontend/modules/admin/screens/doctor_registration/steps/qualifications_page.dart';
 import 'package:frontend/modules/admin/screens/doctor_registration/steps/consultation_page.dart';
 import 'package:frontend/modules/shared/doctor_data_store.dart';
-import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/core/utils/colors.dart';
 import 'package:frontend/modules/admin/widgets/doctor/step_menu.dart';
 import 'package:flutter/material.dart';
 

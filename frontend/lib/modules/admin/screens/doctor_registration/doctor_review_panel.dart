@@ -8,7 +8,7 @@ import 'dart:io';
 import 'package:frontend/modules/admin/models/doctor_model.dart';
 import 'package:frontend/modules/admin/widgets/doctor/admin_document_viewer.dart';
 import 'package:frontend/modules/shared/doctor_data_store.dart';
-import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/core/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 

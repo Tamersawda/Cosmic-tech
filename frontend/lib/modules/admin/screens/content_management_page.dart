@@ -1,7 +1,7 @@
 import 'package:frontend/modules/admin/screens/content/content_editor_page.dart';
 import 'package:frontend/modules/admin/widgets/content/article_list_page.dart';
 import 'package:flutter/material.dart';
-import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/core/utils/colors.dart';
 
 class ContentManagementPage extends StatefulWidget {
   const ContentManagementPage({super.key});

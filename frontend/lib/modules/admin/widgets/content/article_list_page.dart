@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/core/utils/colors.dart';
 
 class ArticlesListPage extends StatelessWidget {
   const ArticlesListPage({super.key});

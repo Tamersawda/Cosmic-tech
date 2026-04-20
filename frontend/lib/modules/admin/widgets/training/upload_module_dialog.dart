@@ -1,4 +1,4 @@
-import 'package:frontend/core/constants/colors.dart';
+import 'package:frontend/core/utils/colors.dart';
 import 'package:frontend/modules/admin/widgets/shared/admin_text_field.dart';
 import 'package:frontend/modules/admin/widgets/outline_button.dart';
 import 'package:file_picker/file_picker.dart';
