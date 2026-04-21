@@ -1,8 +1,12 @@
 -- ============================================================
 -- Clinical Sanctuary - Online Therapy Booking Platform
 -- Database Schema (MySQL)
--- Version: 1.0 MVP
+-- Version: 1.1 MVP 
+-- Consolidated Schema (Full DB Reset)
 -- ============================================================
+
+CREATE DATABASE IF NOT EXISTS therapy_booking_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE therapy_booking_db;
 
 SET FOREIGN_KEY_CHECKS = 0;
 SET sql_mode = 'STRICT_TRANS_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO';
@@ -14,8 +18,13 @@ CREATE TABLE IF NOT EXISTS users (
     id          CHAR(36)        NOT NULL DEFAULT (UUID()),
     email       VARCHAR(255)    NOT NULL,
     password    VARCHAR(255)    NOT NULL,
-    user_type   ENUM('admin', 'doctor', 'patient') NOT NULL,
-    is_active   BOOLEAN NOT NULL DEFAULT true,
+    full_name   VARCHAR(255)    NOT NULL DEFAULT '',
+    user_type   ENUM('admin', 'doctor', 'user') NOT NULL,
+    is_active   BOOLEAN         NOT NULL DEFAULT true,
+    
+    is_email_verified          TINYINT(1)   NOT NULL DEFAULT 0,
+    email_verification_otp     VARCHAR(255) NULL,
+    email_verification_expires DATETIME     NULL,
 
     created_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -23,7 +32,8 @@ CREATE TABLE IF NOT EXISTS users (
     PRIMARY KEY (id),
     UNIQUE KEY uq_users_email (email),
     INDEX idx_users_email (email),
-    INDEX idx_users_user_type (user_type)
+    INDEX idx_users_user_type (user_type),
+    INDEX idx_users_email_verified (is_email_verified)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -85,7 +95,8 @@ CREATE TABLE IF NOT EXISTS doctor_profiles (
     CONSTRAINT fk_doctor_user
         FOREIGN KEY (user_id) REFERENCES users(id)
         ON DELETE CASCADE ON UPDATE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ============================================================
 -- 3. DOCTOR QUALIFICATIONS TABLE
 -- ============================================================
@@ -114,7 +125,7 @@ CREATE TABLE IF NOT EXISTS doctor_weekly_schedule (
     id              CHAR(36)    NOT NULL DEFAULT (UUID()),
     doctor_id       CHAR(36)    NOT NULL,
     day_of_week     TINYINT     NOT NULL,           -- 0=Sunday ... 6=Saturday
-    is_available    BOOLEAN  NOT NULL DEFAULT FALSE,
+    is_available    BOOLEAN     NOT NULL DEFAULT FALSE,
     start_time      TIME        NULL,
     end_time        TIME        NULL,
     break_times     JSON        NULL,               -- [{"start":"13:00","end":"14:00"}]
@@ -136,8 +147,7 @@ CREATE TABLE IF NOT EXISTS doctor_weekly_schedule (
 CREATE TABLE IF NOT EXISTS patient_profiles (
     user_id                 CHAR(36)        NOT NULL,
 
-    first_name              VARCHAR(100)    NOT NULL,
-    last_name               VARCHAR(100)    NOT NULL,
+    full_name               VARCHAR(200)    NOT NULL,   -- Aligned with Frontend API
     gender                  ENUM('male', 'female', 'other') NOT NULL,
     date_of_birth           DATE            NULL,
     phone_number            VARCHAR(30)     NULL,
@@ -166,7 +176,7 @@ CREATE TABLE IF NOT EXISTS patient_profiles (
 
 
 -- ============================================================
--- 6. APPOINTMENTS TABLE (CRITICAL)
+-- 6. APPOINTMENTS TABLE
 -- ============================================================
 CREATE TABLE IF NOT EXISTS appointments (
     id                  CHAR(36)        NOT NULL DEFAULT (UUID()),
@@ -189,12 +199,10 @@ CREATE TABLE IF NOT EXISTS appointments (
     partner_name        VARCHAR(200)    NULL,
     partner_email       VARCHAR(255)    NULL,
 
-    created_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ,
+    created_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),
-
-    -- CRITICAL: One appointment per doctor per time slot
     UNIQUE KEY uq_appointment_slot (doctor_id, scheduled_date, scheduled_time),
 
     INDEX idx_appt_doctor_date (doctor_id, scheduled_date),
@@ -222,7 +230,7 @@ CREATE TABLE IF NOT EXISTS consultation_sessions (
     duration_minutes    SMALLINT        NULL,
     notes               TEXT            NULL,
     prescriptions       JSON            NULL,           -- ["Medication A 10mg"]
-    follow_up_required  BOOLEAN      NOT NULL DEFAULT FALSE,
+    follow_up_required  BOOLEAN         NOT NULL DEFAULT FALSE,
     next_follow_up_date DATE            NULL,
 
     PRIMARY KEY (id),
@@ -244,8 +252,8 @@ CREATE TABLE IF NOT EXISTS messages (
     content         TEXT            NOT NULL,
     message_type    ENUM('text', 'image', 'document') NOT NULL DEFAULT 'text',
     attachment_url  VARCHAR(500)    NULL,
-    is_read         BOOLEAN      NOT NULL DEFAULT FALSE,
-    created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ,
+    is_read         BOOLEAN         NOT NULL DEFAULT FALSE,
+    created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),
     INDEX idx_msg_appointment_time (appointment_id, created_at),
@@ -271,7 +279,7 @@ CREATE TABLE IF NOT EXISTS reviews (
     rating          TINYINT         NOT NULL,
     title           VARCHAR(200)    NULL,
     comment         TEXT            NULL,
-    is_verified     BOOLEAN      NOT NULL DEFAULT FALSE,
+    is_verified     BOOLEAN         NOT NULL DEFAULT FALSE,
     created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),
@@ -331,9 +339,9 @@ CREATE TABLE IF NOT EXISTS notifications (
                 ) NOT NULL,
     title       VARCHAR(255)    NOT NULL,
     message     TEXT            NOT NULL,
-    is_read     BOOLEAN      NOT NULL DEFAULT FALSE,
-    related_id  CHAR(36)        NULL,               -- FK to appointment, review, etc.
-    created_at  DATETIME        NOT NULL DEFAULT current_timestamp,
+    is_read     BOOLEAN         NOT NULL DEFAULT FALSE,
+    related_id  CHAR(36)        NULL,               
+    created_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),
     INDEX idx_notif_user_read (user_id, is_read),
@@ -346,14 +354,14 @@ CREATE TABLE IF NOT EXISTS notifications (
 
 
 -- ============================================================
--- 12. REFRESH TOKENS TABLE (JWT invalidation support)
+-- 12. REFRESH TOKENS TABLE
 -- ============================================================
 CREATE TABLE IF NOT EXISTS refresh_tokens (
     id          CHAR(36)        NOT NULL DEFAULT (UUID()),
     user_id     CHAR(36)        NOT NULL,
     token       VARCHAR(512)    NOT NULL,
     expires_at  DATETIME        NOT NULL,
-    revoked     BOOLEAN      NOT NULL DEFAULT FALSE,
+    revoked     BOOLEAN         NOT NULL DEFAULT FALSE,
     created_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),
@@ -366,63 +374,3 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;
-
-
--- ============================================================
--- VALIDATION TEST DATA
--- Run these to verify schema integrity
--- ============================================================
-
--- Test 1: Insert a user (patient)
-INSERT INTO users (id, email, password, user_type)
-VALUES ('aaaaaaaa-0001-0001-0001-000000000001',
-        'patient@test.com',
-        '$2b$12$hashedpasswordhere',
-        'patient');
-
--- Test 2: Insert a user (doctor)
-INSERT INTO users (id, email, password, user_type)
-VALUES ('bbbbbbbb-0002-0002-0002-000000000002',
-        'doctor@test.com',
-        '$2b$12$hashedpasswordhere',
-        'doctor');
-
--- Test 3: Insert doctor profile linked to user
-INSERT INTO doctor_profiles
-    (user_id, full_name, gender, primary_specialty, license_number,
-     languages_spoken, years_of_experience)
-VALUES ('bbbbbbbb-0002-0002-0002-000000000002',
-        'Dr. Arjun Menon', 'male', 'Clinical Psychology', 'LIC-2024-001',
-        '["English", "Malayalam"]', 8);
-
--- Test 4: Insert patient profile
-INSERT INTO patient_profiles (user_id, first_name, last_name, gender)
-VALUES ('aaaaaaaa-0001-0001-0001-000000000001', 'Priya', 'Nair', 'female');
-
--- Test 5: Create an appointment
-INSERT INTO appointments
-    (id, doctor_id, patient_id, scheduled_date, scheduled_time, end_time,
-     consultation_type, status)
-VALUES ('cccccccc-0003-0003-0003-000000000003',
-        'bbbbbbbb-0002-0002-0002-000000000002',
-        'aaaaaaaa-0001-0001-0001-000000000001',
-        '2026-04-15', '10:00:00', '11:00:00',
-        'video', 'scheduled');
-
--- Test 6: Attempt DUPLICATE appointment → MUST FAIL (same doctor, date, time)
--- This INSERT should produce: ERROR 1062 (Duplicate entry)
--- INSERT INTO appointments
---     (id, doctor_id, patient_id, scheduled_date, scheduled_time, end_time,
---      consultation_type, status)
--- VALUES (UUID(),
---         'bbbbbbbb-0002-0002-0002-000000000002',
---         'aaaaaaaa-0001-0001-0001-000000000001',
---         '2026-04-15', '10:00:00', '11:00:00',
---         'audio', 'scheduled');
-
--- Test 7: Delete user → related records CASCADE
--- DELETE FROM users WHERE id = 'bbbbbbbb-0002-0002-0002-000000000002';
--- (doctor_profile, appointments etc. will cascade-delete automatically)
-
--- Clean up test data (uncomment to run after validation)
--- DELETE FROM users WHERE email IN ('patient@test.com', 'doctor@test.com');
