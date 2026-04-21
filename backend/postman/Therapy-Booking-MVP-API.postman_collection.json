@@ -1,0 +1,811 @@
+{
+  "info": {
+    "name": "Therapy Booking - MVP API (Phase 1)",
+    "description": "MVP authentication and profile management collection. Email verification NOT required in MVP.",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost",
+      "type": "string"
+    },
+    {
+      "key": "doctorToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "patientToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "doctorId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "patientId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "doctorEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "patientEmail",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication (MVP) - No Email Verification",
+      "description": "MVP endpoints: Register, Login, Get Current User. Email is automatically verified.",
+      "item": [
+        {
+          "name": "1. Register Doctor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    pm.collectionVariables.set(\"doctorId\", jsonData.data.id);",
+                  "    pm.collectionVariables.set(\"doctorEmail\", jsonData.data.email);",
+                  "    console.log('\u2705 Doctor registered: ' + jsonData.data.email);",
+                  "    console.log('   User ID: ' + jsonData.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"doctor_{{$timestamp}}@example.com\",\n  \"password\": \"DocPassword123\",\n  \"role\": \"doctor\",\n  \"name\": \"Dr. Alice Smith\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Register a new doctor account. Email is automatically verified (MVP feature). Returns user ID, email, and userType. Ready to login immediately."
+          },
+          "response": [
+            {
+              "name": "Success (201)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"doctor_test@example.com\",\n  \"password\": \"DocPassword123\",\n  \"role\": \"doctor\",\n  \"name\": \"Dr. Alice Smith\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/register",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "register"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"email\": \"doctor_test@example.com\",\n  \"role\": \"doctor\",\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.sample_token\",\n  \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.sample_refresh\"\n}"
+            },
+            {
+              "name": "Error - Email Already Exists (409)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"existing@example.com\",\n  \"password\": \"DocPassword123\",\n  \"role\": \"doctor\",\n  \"name\": \"Another Doctor\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/register",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "register"
+                  ]
+                }
+              },
+              "status": "Conflict",
+              "code": 409,
+              "body": "{\n  \"message\": \"Email already exists\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "2. Register Patient",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    pm.collectionVariables.set(\"patientId\", jsonData.data.id);",
+                  "    pm.collectionVariables.set(\"patientEmail\", jsonData.data.email);",
+                  "    console.log('\u2705 Patient registered: ' + jsonData.data.email);",
+                  "    console.log('   User ID: ' + jsonData.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"patient_{{$timestamp}}@example.com\",\n  \"password\": \"PatPassword123\",\n  \"role\": \"user\",\n  \"name\": \"John Doe\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Register a new patient account. Email is automatically verified (MVP feature). Returns user ID, email, and userType. Ready to login immediately."
+          }
+        },
+        {
+          "name": "3. Login Doctor",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data && jsonData.data.token) {",
+                  "    pm.collectionVariables.set(\"doctorToken\", jsonData.data.token);",
+                  "    console.log('\u2705 Doctor logged in successfully');",
+                  "    console.log('   Token: ' + jsonData.data.token.substring(0, 30) + '...');",
+                  "    console.log('   Expires in: 1 hour');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login as doctor. Email verification is NOT checked (MVP). Returns JWT access token and refresh token. Access token expires in 1 hour."
+          },
+          "response": [
+            {
+              "name": "Success (200)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"doctor@example.com\",\n  \"password\": \"DocPassword123\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "login"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": \"123\",\n  \"name\": \"Test User\",\n  \"email\": \"test@example.com\",\n  \"role\": \"doctor\",\n  \"token\": \"sample_token\",\n  \"refreshToken\": \"sample_refresh_token\"\n}"
+            },
+            {
+              "name": "Error - Invalid Credentials (401)",
+              "status": "Unauthorized",
+              "code": 401,
+              "body": "{\n  \"message\": \"Invalid credentials\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "4. Login Patient",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data && jsonData.data.token) {",
+                  "    pm.collectionVariables.set(\"patientToken\", jsonData.data.token);",
+                  "    console.log('\u2705 Patient logged in successfully');",
+                  "    console.log('   Token: ' + jsonData.data.token.substring(0, 30) + '...');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login as patient. Email verification is NOT checked (MVP). Returns JWT tokens ready for protected API calls."
+          }
+        },
+        {
+          "name": "5. Get Current User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    console.log('\u2705 Current user retrieved');",
+                  "    console.log('   User Type: ' + jsonData.data.role);",
+                  "    console.log('   Email Verified: ' + jsonData.data.isEmailVerified);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{doctorToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Get current authenticated user information. Requires valid JWT token in Authorization header."
+          },
+          "response": [
+            {
+              "name": "Success (200)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "me"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"email\": \"doctor@example.com\",\n    \"role\": \"doctor\",\n    \"name\": \"Dr. Alice Smith\",\n    \"isEmailVerified\": true\n  }\n}"
+            },
+            {
+              "name": "Error - Unauthorized (401)",
+              "status": "Unauthorized",
+              "code": 401,
+              "body": "{\n  \"message\": \"Unauthorized\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "ERROR CASES - Validation Examples",
+          "item": [
+            {
+              "name": "Register - Missing Password",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"test@example.com\",\n  \"role\": \"doctor\",\n  \"name\": \"Test User\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/register",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "register"
+                  ]
+                },
+                "description": "Should return 400: password is required"
+              }
+            },
+            {
+              "name": "Register - Weak Password (< 6 chars)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"weak@example.com\",\n  \"password\": \"123\",\n  \"role\": \"patient\",\n  \"name\": \"Weak Password\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/register",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "register"
+                  ]
+                },
+                "description": "Should return 400: password must be at least 6 characters"
+              }
+            },
+            {
+              "name": "Register - Invalid Email Format",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"not-an-email\",\n  \"password\": \"Password123\",\n  \"role\": \"doctor\",\n  \"name\": \"Invalid Email\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/register",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "register"
+                  ]
+                },
+                "description": "Should return 400: email must be a valid email"
+              }
+            },
+            {
+              "name": "Register - Invalid User Type",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"AdminPassword123\",\n  \"role\": \"admin\",\n  \"name\": \"Admin User\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/register",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "register"
+                  ]
+                },
+                "description": "Should return 400: userType must be either doctor or patient"
+              }
+            },
+            {
+              "name": "Login - Wrong Password",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"doctor@example.com\",\n  \"password\": \"WrongPassword123\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "login"
+                  ]
+                },
+                "description": "Should return 401: Invalid email or password"
+              }
+            },
+            {
+              "name": "Get Current User - No Token",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "me"
+                  ]
+                },
+                "description": "Should return 401: Unauthorized (no token)"
+              }
+            },
+            {
+              "name": "Get Current User - Invalid Token",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer invalid_token_here"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "me"
+                  ]
+                },
+                "description": "Should return 401: Unauthorized (invalid token)"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Doctor Profile Setup (Future Endpoints)",
+      "description": "These endpoints will be implemented for profile setup. Examples provided.",
+      "item": [
+        {
+          "name": "POST /api/doctor-profile/setup - Example",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{doctorToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Dr. John Smith\",\n  \"gender\": \"male\",\n  \"dateOfBirth\": \"1985-03-15\",\n  \"phoneNumber\": \"+91-9876543210\",\n  \"profilePhoto\": \"url_to_photo.jpg\",\n  \"primarySpecialty\": \"Clinical Psychology\",\n  \"subSpecializations\": [\"Anxiety\", \"Depression\", \"PTSD\"],\n  \"yearsOfExperience\": 12,\n  \"licenseNumber\": \"LIC-2024-001\",\n  \"languagesSpoken\": [\"English\", \"Malayalam\", \"Hindi\"],\n  \"streetAddress\": \"123 Medical Plaza\",\n  \"city\": \"Bangalore\",\n  \"state\": \"Karnataka\",\n  \"country\": \"India\",\n  \"postalCode\": \"560001\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/doctor-profile/setup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "doctor-profile",
+                "setup"
+              ]
+            },
+            "description": "Setup complete doctor profile with all details. Validation rules: dateOfBirth (YYYY-MM-DD), yearsOfExperience (0-60), age check, phone format."
+          }
+        },
+        {
+          "name": "POST /api/doctor-profile/qualifications - Example",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{doctorToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"degree\": \"M.Tech Psychology\",\n  \"instituteName\": \"University of Delhi\",\n  \"yearOfCompletion\": 2012,\n  \"certificateFile\": \"url_to_certificate.pdf\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/doctor-profile/qualifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "doctor-profile",
+                "qualifications"
+              ]
+            },
+            "description": "Add a qualification. Note: specialization field has been removed as per MVP requirements."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Patient Profile Setup (Future Endpoints)",
+      "description": "These endpoints will be implemented for patient profile setup. Examples provided.",
+      "item": [
+        {
+          "name": "POST /api/patient-profile/setup - Example",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{patientToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Priya Sharma\",\n  \"age\": 28,\n  \"gender\": \"female\",\n  \"phoneNumber\": \"+91-9876543211\",\n  \"profilePhoto\": \"url_to_photo.jpg\",\n  \"medicalHistory\": \"Previous anxiety treatment\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/patient-profile/setup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "patient-profile",
+                "setup"
+              ]
+            },
+            "description": "Setup patient profile. MVP uses fullName + age (not firstName/lastName + dateOfBirth). Validation: age 1-120."
+          }
+        }
+      ]
+    },
+    {
+      "name": "File Uploads (Future Endpoints)",
+      "description": "File upload endpoints for profile photos, documents, and certificates.",
+      "item": [
+        {
+          "name": "POST /api/profile/photo - Example",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{doctorToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "profile_photo.jpg"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/profile/photo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "profile",
+                "photo"
+              ]
+            },
+            "description": "Upload profile photo. Allowed: JPG, PNG (5MB max). Returns file URL."
+          }
+        },
+        {
+          "name": "POST /api/documents/upload - Example",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{doctorToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "license.pdf"
+                },
+                {
+                  "key": "documentType",
+                  "value": "license",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/documents/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "upload"
+              ]
+            },
+            "description": "Upload document (identity, license). Allowed: JPG, PNG, PDF (10MB max). Document types: identity, license, certificate, qualification."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Validation Reference",
+      "description": "Field validation rules and constraints for the MVP API.",
+      "item": [
+        {
+          "name": "Validation Rules - Read This First",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": "VALIDATION RULES REFERENCE:\n\nEMAIL:\n  - Must be valid format (RFC 5322)\n  - Must be unique\n  - Case-insensitive\n\nPASSWORD:\n  - Minimum 6 characters\n  - Hashed with bcrypt (cost=12)\n  - Never returned in API responses\n\nUSER TYPE:\n  - Must be: \"doctor\" or \"patient\"\n  - Cannot be \"admin\"\n\nDATE OF BIRTH (Doctor):\n  - Format: YYYY-MM-DD\n  - Example: 1985-03-15\n  - Must be valid calendar date\n\nAGE (Patient):\n  - Range: 1-120\n  - Integer only\n  - Cannot be null\n\nYEARS OF EXPERIENCE (Doctor):\n  - Range: 0-60\n  - Integer only\n  - Required\n\nPHONE NUMBER:\n  - Length: 10-15 characters\n  - Allowed: digits, spaces, hyphens, plus sign, parentheses\n  - Example: +91-9876543210, (555) 123-4567\n\nGENDER (Doctor):\n  - Values: male, female, other, prefer_not_to_say\n\nGENDER (Patient):\n  - Values: male, female, other\n\nLANGUAGES SPOKEN:\n  - Must be array\n  - Example: [\"English\", \"Malayalam\", \"Hindi\"]\n\nSUB SPECIALIZATIONS:\n  - Must be array\n  - Example: [\"Anxiety\", \"Depression\", \"PTSD\"]\n\nFILE TYPES:\n  - Photos: JPG, PNG (5MB max)\n  - Documents: JPG, PNG, PDF (10MB max)\n  - MIME types verified\n\nFORMAT EXAMPLES:\n  \u2705 Email: user@example.com\n  \u2705 Password: SecurePass123\n  \u2705 Phone: +91-9876543210\n  \u2705 Date: 1985-03-15\n  \u2705 Languages: [\"English\", \"Malayalam\"]\n  \u274c Email: user@example (invalid)\n  \u274c Password: 123 (too short)\n  \u274c Date: 1985/03/15 (wrong format)"
+          }
+        }
+      ]
+    }
+  ]
+}

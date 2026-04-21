@@ -1,0 +1,415 @@
+-- ============================================================
+-- Clinical Sanctuary - Online Therapy Booking Platform
+-- Database Schema (MySQL)
+-- Version: 1.1 MVP 
+-- Consolidated Schema (Full DB Reset)
+-- ============================================================
+
+CREATE DATABASE IF NOT EXISTS therapy_booking_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE therapy_booking_db;
+
+SET FOREIGN_KEY_CHECKS = 0;
+SET sql_mode = 'STRICT_TRANS_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO';
+
+-- ============================================================
+-- 1. USERS TABLE
+-- ============================================================
+CREATE TABLE IF NOT EXISTS users (
+    id          CHAR(36)        NOT NULL DEFAULT (UUID()),
+    email       VARCHAR(255)    NOT NULL,
+    password    VARCHAR(255)    NOT NULL,
+<<<<<<< HEAD:db/schema.sql
+    user_type   ENUM('admin', 'doctor', 'patient') NOT NULL,
+    is_active   BOOLEAN NOT NULL DEFAULT true,
+=======
+    full_name   VARCHAR(255)    NOT NULL DEFAULT '',
+    user_type   ENUM('admin', 'doctor', 'user') NOT NULL,
+    is_active   BOOLEAN         NOT NULL DEFAULT true,
+    
+    is_email_verified          TINYINT(1)   NOT NULL DEFAULT 0,
+    email_verification_otp     VARCHAR(255) NULL,
+    email_verification_expires DATETIME     NULL,
+>>>>>>> 87a1fb828da8724dd6db926372bb850a47ca6f5c:backend/db/schema.sql
+
+    created_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_users_email (email),
+    INDEX idx_users_email (email),
+    INDEX idx_users_user_type (user_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ============================================================
+-- 2. DOCTOR PROFILE TABLE
+-- ============================================================
+CREATE TABLE IF NOT EXISTS doctor_profiles (
+    user_id CHAR(36) NOT NULL,
+
+    full_name VARCHAR(255) NOT NULL,
+    gender ENUM('male', 'female', 'other', 'prefer_not_to_say') NOT NULL,
+    date_of_birth DATE NULL,
+    phone_number VARCHAR(30) NULL,
+    profile_photo VARCHAR(500) NULL,
+
+    primary_specialty VARCHAR(150) NOT NULL,
+    sub_specializations JSON NULL,
+    years_of_experience SMALLINT NOT NULL DEFAULT 0,
+    license_number VARCHAR(100) NOT NULL,
+    medical_council VARCHAR(100) NOT NULL,
+    languages_spoken JSON NOT NULL,
+
+    video_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    video_rate DECIMAL(10,2) NULL,
+    audio_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    audio_rate DECIMAL(10,2) NULL,
+    follow_up_rate DECIMAL(10,2) NULL,
+    consultation_duration ENUM('30min', '45min', '60min') NOT NULL DEFAULT '60min',
+    buffer_time ENUM('5min', '10min', '15min', '30min') NOT NULL DEFAULT '10min',
+    instant_booking_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+
+    street_address VARCHAR(255) NULL,
+    city VARCHAR(100) NULL,
+    state VARCHAR(100) NULL,
+    country VARCHAR(100) NULL,
+    postal_code VARCHAR(20) NULL,
+    latitude DECIMAL(10,7) NULL,
+    longitude DECIMAL(10,7) NULL,
+
+    is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    verification_status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+    trust_badge_earned BOOLEAN NOT NULL DEFAULT FALSE,
+
+    onboarding_current_step TINYINT NOT NULL DEFAULT 1,
+    onboarding_completed_steps JSON NULL,
+    onboarding_percentage TINYINT NOT NULL DEFAULT 0,
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (user_id),
+    UNIQUE KEY uq_doctor_license (license_number),
+
+    INDEX idx_doctor_specialty (primary_specialty),
+    INDEX idx_doctor_experience (years_of_experience),
+    INDEX idx_doctor_verified (is_verified),
+    INDEX idx_doctor_city (city),
+
+    CONSTRAINT fk_doctor_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE CASCADE ON UPDATE CASCADE
+<<<<<<< HEAD:db/schema.sql
+);
+=======
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+>>>>>>> 87a1fb828da8724dd6db926372bb850a47ca6f5c:backend/db/schema.sql
+-- ============================================================
+-- 3. DOCTOR QUALIFICATIONS TABLE
+-- ============================================================
+CREATE TABLE IF NOT EXISTS doctor_qualifications (
+    id                  CHAR(36)        NOT NULL DEFAULT (UUID()),
+    doctor_id           CHAR(36)        NOT NULL,
+    institute_name      VARCHAR(255)    NOT NULL,
+    degree              VARCHAR(150)    NOT NULL,
+    specialization      VARCHAR(150)    NULL,
+    year_of_completion  YEAR            NOT NULL,
+    certificate_file    VARCHAR(500)    NULL,
+
+    PRIMARY KEY (id),
+    INDEX idx_qual_doctor (doctor_id),
+
+    CONSTRAINT fk_qual_doctor
+        FOREIGN KEY (doctor_id) REFERENCES doctor_profiles(user_id)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ============================================================
+-- 4. DOCTOR WEEKLY SCHEDULE TABLE
+-- ============================================================
+CREATE TABLE IF NOT EXISTS doctor_weekly_schedule (
+    id              CHAR(36)    NOT NULL DEFAULT (UUID()),
+    doctor_id       CHAR(36)    NOT NULL,
+    day_of_week     TINYINT     NOT NULL,           -- 0=Sunday ... 6=Saturday
+<<<<<<< HEAD:db/schema.sql
+    is_available    BOOLEAN  NOT NULL DEFAULT FALSE,
+=======
+    is_available    BOOLEAN     NOT NULL DEFAULT FALSE,
+>>>>>>> 87a1fb828da8724dd6db926372bb850a47ca6f5c:backend/db/schema.sql
+    start_time      TIME        NULL,
+    end_time        TIME        NULL,
+    break_times     JSON        NULL,               -- [{"start":"13:00","end":"14:00"}]
+
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_schedule_doctor_day (doctor_id, day_of_week),
+
+    CONSTRAINT fk_schedule_doctor
+        FOREIGN KEY (doctor_id) REFERENCES doctor_profiles(user_id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+
+    CONSTRAINT chk_day_of_week CHECK (day_of_week BETWEEN 0 AND 6)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ============================================================
+-- 5. PATIENT PROFILE TABLE
+-- ============================================================
+CREATE TABLE IF NOT EXISTS patient_profiles (
+    user_id                 CHAR(36)        NOT NULL,
+
+    full_name               VARCHAR(200)    NOT NULL,   -- Aligned with Frontend API
+    gender                  ENUM('male', 'female', 'other') NOT NULL,
+    date_of_birth           DATE            NULL,
+    phone_number            VARCHAR(30)     NULL,
+    profile_photo           VARCHAR(500)    NULL,
+
+    -- Medical (optional)
+    medical_history         TEXT            NULL,
+    allergies               JSON            NULL,           -- ["Penicillin"]
+    current_medications     JSON            NULL,           -- ["Sertraline 50mg"]
+
+    -- Emergency contact
+    emergency_contact_name          VARCHAR(150)    NULL,
+    emergency_contact_relationship  VARCHAR(100)    NULL,
+    emergency_contact_phone         VARCHAR(30)     NULL,
+
+    created_at  DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (user_id),
+    INDEX idx_patient_phone (phone_number),
+
+    CONSTRAINT fk_patient_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ============================================================
+-- 6. APPOINTMENTS TABLE
+-- ============================================================
+CREATE TABLE IF NOT EXISTS appointments (
+    id                  CHAR(36)        NOT NULL DEFAULT (UUID()),
+    doctor_id           CHAR(36)        NOT NULL,
+    patient_id          CHAR(36)        NOT NULL,
+
+    scheduled_date      DATE            NOT NULL,
+    scheduled_time      TIME            NOT NULL,
+    end_time            TIME            NOT NULL,       -- stored explicitly
+
+    consultation_type   ENUM('video', 'audio', 'chat') NOT NULL,
+    status              ENUM('scheduled', 'in_progress', 'completed', 'cancelled', 'no_show', 'rescheduled')
+                        NOT NULL DEFAULT 'scheduled',
+
+    reason_for_visit    TEXT            NULL,
+    notes               TEXT            NULL,
+    recording_url       VARCHAR(500)    NULL,
+
+    session_type        ENUM('individual', 'couple') NOT NULL DEFAULT 'individual',
+    partner_name        VARCHAR(200)    NULL,
+    partner_email       VARCHAR(255)    NULL,
+
+<<<<<<< HEAD:db/schema.sql
+    created_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ,
+=======
+    created_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+>>>>>>> 87a1fb828da8724dd6db926372bb850a47ca6f5c:backend/db/schema.sql
+    updated_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_appointment_slot (doctor_id, scheduled_date, scheduled_time),
+
+    INDEX idx_appt_doctor_date (doctor_id, scheduled_date),
+    INDEX idx_appt_patient_date (patient_id, scheduled_date),
+    INDEX idx_appt_status (status),
+
+    CONSTRAINT fk_appt_doctor
+        FOREIGN KEY (doctor_id) REFERENCES doctor_profiles(user_id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+
+    CONSTRAINT fk_appt_patient
+        FOREIGN KEY (patient_id) REFERENCES patient_profiles(user_id)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ============================================================
+-- 7. CONSULTATION SESSIONS TABLE
+-- ============================================================
+CREATE TABLE IF NOT EXISTS consultation_sessions (
+    id                  CHAR(36)        NOT NULL DEFAULT (UUID()),
+    appointment_id      CHAR(36)        NOT NULL,
+    started_at          DATETIME        NULL,
+    ended_at            DATETIME        NULL,
+    duration_minutes    SMALLINT        NULL,
+    notes               TEXT            NULL,
+    prescriptions       JSON            NULL,           -- ["Medication A 10mg"]
+<<<<<<< HEAD:db/schema.sql
+    follow_up_required  BOOLEAN      NOT NULL DEFAULT FALSE,
+=======
+    follow_up_required  BOOLEAN         NOT NULL DEFAULT FALSE,
+>>>>>>> 87a1fb828da8724dd6db926372bb850a47ca6f5c:backend/db/schema.sql
+    next_follow_up_date DATE            NULL,
+
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_session_appointment (appointment_id),
+
+    CONSTRAINT fk_session_appointment
+        FOREIGN KEY (appointment_id) REFERENCES appointments(id)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ============================================================
+-- 8. MESSAGES TABLE
+-- ============================================================
+CREATE TABLE IF NOT EXISTS messages (
+    id              CHAR(36)        NOT NULL DEFAULT (UUID()),
+    appointment_id  CHAR(36)        NOT NULL,
+    sender_id       CHAR(36)        NOT NULL,
+    content         TEXT            NOT NULL,
+    message_type    ENUM('text', 'image', 'document') NOT NULL DEFAULT 'text',
+    attachment_url  VARCHAR(500)    NULL,
+<<<<<<< HEAD:db/schema.sql
+    is_read         BOOLEAN      NOT NULL DEFAULT FALSE,
+    created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ,
+=======
+    is_read         BOOLEAN         NOT NULL DEFAULT FALSE,
+    created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+>>>>>>> 87a1fb828da8724dd6db926372bb850a47ca6f5c:backend/db/schema.sql
+
+    PRIMARY KEY (id),
+    INDEX idx_msg_appointment_time (appointment_id, created_at),
+
+    CONSTRAINT fk_msg_appointment
+        FOREIGN KEY (appointment_id) REFERENCES appointments(id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+
+    CONSTRAINT fk_msg_sender
+        FOREIGN KEY (sender_id) REFERENCES users(id)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ============================================================
+-- 9. REVIEWS TABLE
+-- ============================================================
+CREATE TABLE IF NOT EXISTS reviews (
+    id              CHAR(36)        NOT NULL DEFAULT (UUID()),
+    doctor_id       CHAR(36)        NOT NULL,
+    patient_id      CHAR(36)        NOT NULL,
+    appointment_id  CHAR(36)        NULL,
+    rating          TINYINT         NOT NULL,
+    title           VARCHAR(200)    NULL,
+    comment         TEXT            NULL,
+<<<<<<< HEAD:db/schema.sql
+    is_verified     BOOLEAN      NOT NULL DEFAULT FALSE,
+=======
+    is_verified     BOOLEAN         NOT NULL DEFAULT FALSE,
+>>>>>>> 87a1fb828da8724dd6db926372bb850a47ca6f5c:backend/db/schema.sql
+    created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_review_patient_appointment (patient_id, appointment_id),
+    INDEX idx_review_doctor (doctor_id),
+
+    CONSTRAINT fk_review_doctor
+        FOREIGN KEY (doctor_id) REFERENCES doctor_profiles(user_id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+
+    CONSTRAINT fk_review_patient
+        FOREIGN KEY (patient_id) REFERENCES patient_profiles(user_id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+
+    CONSTRAINT fk_review_appointment
+        FOREIGN KEY (appointment_id) REFERENCES appointments(id)
+        ON DELETE SET NULL ON UPDATE CASCADE,
+
+    CONSTRAINT chk_rating CHECK (rating BETWEEN 1 AND 5)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ============================================================
+-- 10. DOCUMENTS TABLE
+-- ============================================================
+CREATE TABLE IF NOT EXISTS documents (
+    id                  CHAR(36)    NOT NULL DEFAULT (UUID()),
+    user_id             CHAR(36)    NOT NULL,
+    document_type       ENUM('license', 'certificate', 'qualification', 'identity') NOT NULL,
+    file_url            VARCHAR(500) NOT NULL,
+    file_name           VARCHAR(255) NOT NULL,
+    uploaded_at         DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    verification_status ENUM('pending', 'verified', 'rejected') NOT NULL DEFAULT 'pending',
+
+    PRIMARY KEY (id),
+    INDEX idx_doc_user (user_id),
+
+    CONSTRAINT fk_doc_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ============================================================
+-- 11. NOTIFICATIONS TABLE
+-- ============================================================
+CREATE TABLE IF NOT EXISTS notifications (
+    id          CHAR(36)        NOT NULL DEFAULT (UUID()),
+    user_id     CHAR(36)        NOT NULL,
+    type        ENUM(
+                    'appointment_scheduled',
+                    'appointment_reminder',
+                    'consultation_completed',
+                    'review_received',
+                    'profile_updated',
+                    'verification_update'
+                ) NOT NULL,
+    title       VARCHAR(255)    NOT NULL,
+    message     TEXT            NOT NULL,
+<<<<<<< HEAD:db/schema.sql
+    is_read     BOOLEAN      NOT NULL DEFAULT FALSE,
+    related_id  CHAR(36)        NULL,               -- FK to appointment, review, etc.
+    created_at  DATETIME        NOT NULL DEFAULT current_timestamp,
+=======
+    is_read     BOOLEAN         NOT NULL DEFAULT FALSE,
+    related_id  CHAR(36)        NULL,               
+    created_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+>>>>>>> 87a1fb828da8724dd6db926372bb850a47ca6f5c:backend/db/schema.sql
+
+    PRIMARY KEY (id),
+    INDEX idx_notif_user_read (user_id, is_read),
+    INDEX idx_notif_created (created_at),
+
+    CONSTRAINT fk_notif_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ============================================================
+-- 12. REFRESH TOKENS TABLE
+-- ============================================================
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id          CHAR(36)        NOT NULL DEFAULT (UUID()),
+    user_id     CHAR(36)        NOT NULL,
+    token       VARCHAR(512)    NOT NULL,
+    expires_at  DATETIME        NOT NULL,
+<<<<<<< HEAD:db/schema.sql
+    revoked     BOOLEAN      NOT NULL DEFAULT FALSE,
+=======
+    revoked     BOOLEAN         NOT NULL DEFAULT FALSE,
+>>>>>>> 87a1fb828da8724dd6db926372bb850a47ca6f5c:backend/db/schema.sql
+    created_at  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_token (token(255)),
+    INDEX idx_rt_user (user_id),
+
+    CONSTRAINT fk_rt_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+SET FOREIGN_KEY_CHECKS = 1;
