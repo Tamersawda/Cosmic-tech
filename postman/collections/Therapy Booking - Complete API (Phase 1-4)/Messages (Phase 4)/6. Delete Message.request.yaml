@@ -1,7 +1,0 @@
-$kind: http-request
-description: Delete a message
-url: "{{baseUrl}}/api/messages/{{messageId}}"
-method: DELETE
-headers:
-  Authorization: Bearer {{doctorToken}}
-order: 6000

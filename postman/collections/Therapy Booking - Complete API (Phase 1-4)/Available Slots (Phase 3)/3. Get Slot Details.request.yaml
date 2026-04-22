@@ -1,7 +1,0 @@
-$kind: http-request
-description: Get details of a specific available slot
-url: "{{baseUrl}}/api/available-slots/{{slotId}}"
-method: GET
-headers:
-  Authorization: Bearer {{patientToken}}
-order: 3000

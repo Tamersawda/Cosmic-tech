@@ -1,8 +1,0 @@
-$kind: http-request
-description: Get current logged-in user info. Shows email verification status.
-url: "{{baseUrl}}/api/me"
-method: GET
-headers:
-  Authorization: Bearer {{doctorToken}}
-examples: ./.resources/16. Get Current User - Valid Token.resources/examples
-order: 16000

@@ -1,7 +1,0 @@
-$kind: http-request
-description: Get all consultations for the current patient
-url: "{{baseUrl}}/api/consultations/patient"
-method: GET
-headers:
-  Authorization: Bearer {{patientToken}}
-order: 4000

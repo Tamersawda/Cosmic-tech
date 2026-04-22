@@ -1,7 +1,0 @@
-$kind: http-request
-description: Get doctor profile details
-url: "{{baseUrl}}/api/doctor-profile/{{doctorProfileId}}"
-method: GET
-headers:
-  Authorization: Bearer {{doctorToken}}
-order: 2000

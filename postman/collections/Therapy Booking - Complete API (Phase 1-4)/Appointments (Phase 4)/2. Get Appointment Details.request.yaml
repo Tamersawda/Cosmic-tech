@@ -1,7 +1,0 @@
-$kind: http-request
-description: Get appointment details
-url: "{{baseUrl}}/api/appointments/{{appointmentId}}"
-method: GET
-headers:
-  Authorization: Bearer {{patientToken}}
-order: 2000

@@ -1,7 +1,0 @@
-$kind: http-request
-description: Get all received messages
-url: "{{baseUrl}}/api/messages/inbox"
-method: GET
-headers:
-  Authorization: Bearer {{doctorToken}}
-order: 2000

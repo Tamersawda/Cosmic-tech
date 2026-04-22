@@ -1,7 +1,0 @@
-$kind: http-request
-description: Cancel an appointment
-url: "{{baseUrl}}/api/appointments/{{appointmentId}}"
-method: DELETE
-headers:
-  Authorization: Bearer {{patientToken}}
-order: 6000

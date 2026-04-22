@@ -1,7 +1,0 @@
-$kind: http-request
-description: Get consultation details
-url: "{{baseUrl}}/api/consultations/{{consultationId}}"
-method: GET
-headers:
-  Authorization: Bearer {{doctorToken}}
-order: 2000
