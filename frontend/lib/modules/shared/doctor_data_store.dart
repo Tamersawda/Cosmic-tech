@@ -8,7 +8,7 @@
 //
 // In production this would be replaced by a Firestore / REST backend call.
 
-import 'package:frontend/modules/admin/models/doctor_model.dart';
+import 'package:frontend/modules/admin/presentation/models/doctor_model.dart';
 import 'package:flutter/foundation.dart';
 
 class DoctorDataStore extends ChangeNotifier {

@@ -1,18 +1,22 @@
-import 'package:frontend/core/utils/enums.dart';
-import 'package:frontend/modules/auth/presentation/screens/registration_page.dart';
-import 'package:frontend/core/utils/colors.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:frontend/core/utils/colors.dart';
+import 'package:frontend/core/utils/enums.dart';
+import 'package:frontend/core/utils/responsive_data.dart';
+import 'package:frontend/modules/auth/presentation/providers/auth_provider.dart';
+import 'package:frontend/modules/auth/presentation/screens/login_page.dart';
+import 'package:frontend/modules/auth/presentation/screens/registration_page.dart';
 
-class LandingPage extends StatelessWidget {
+class LandingPage extends ConsumerWidget {
   const LandingPage({super.key});
 
   void _navigateFade(BuildContext context, Widget page) {
     Navigator.push(
       context,
       PageRouteBuilder(
-        pageBuilder: (_, _, _) => page,
+        pageBuilder: (_, __, ___) => page,
         transitionDuration: const Duration(milliseconds: 300),
-        transitionsBuilder: (_, animation, _, child) => FadeTransition(
+        transitionsBuilder: (_, animation, __, child) => FadeTransition(
           opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
           child: child,
         ),
@@ -21,27 +25,105 @@ class LandingPage extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Listen for auth state — if somehow already authenticated, skip landing
+    ref.listen<AuthState>(authProvider, (_, next) {
+      if (next is AuthAuthenticated) {
+        _routeToHome(context, next.user.role);
+      }
+    });
+
+    final isMobile = Responsive.isMobile(context);
+
     return Scaffold(
       backgroundColor: AppColors.bgColor,
-      body: Center(
-        child: SingleChildScrollView(
-          child: SafeArea(
-            child: _LandingCard(
-              title: 'The Clinical\nSanctuary',
-              subtitle:
-                  'A mindful workspace designed\nfor modern psychiatric practice.',
-              icon: Icons.spa_rounded,
-              primaryBtnText: "Create Doctor's Account",
-              secondaryBtnText: 'Create a user Account',
-              footerText: 'Trusted by over 1,200 specialists nationwide',
-              onPrimaryTap: () => _navigateFade(
-                context,
-                const RegisterPage(role: UserRole.doctor),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(
+              horizontal: Responsive.horizontalPadding(context),
+              vertical: 24,
+            ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: isMobile ? 380 : 420,
               ),
-              onSecondaryTap: () => _navigateFade(
-                context,
-                const RegisterPage(role: UserRole.user),
+              child: Column(
+                children: [
+                  // ── Hero card ───────────────────────────
+                  _HeroCard(isMobile: isMobile),
+
+                  SizedBox(height: Responsive.sectionSpacing(context)),
+
+                  // ── Doctor button ───────────────────────
+                  _LandingButton(
+                    label: "Create Doctor's Account",
+                    icon: Icons.spa_rounded,
+                    backgroundColor: AppColors.accentTeal,
+                    foregroundColor: AppColors.white,
+                    onTap: () => _navigateFade(
+                      context,
+                      const RegisterPage(role: UserRole.doctor),
+                    ),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // ── User button ─────────────────────────
+                  _LandingButton(
+                    label: 'Create a Patient Account',
+                    icon: Icons.favorite_rounded,
+                    backgroundColor: AppColors.primarySurface,
+                    foregroundColor: AppColors.primaryColor,
+                    onTap: () => _navigateFade(
+                      context,
+                      const RegisterPage(role: UserRole.user),
+                    ),
+                  ),
+
+                  const SizedBox(height: 28),
+
+                  // ── Already have account ────────────────
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'Already have an account? ',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.mutedText,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => _navigateFade(
+                          context,
+                          const LoginPage(),
+                        ),
+                        child: const Text(
+                          'Log in',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.primaryColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // ── Footer ──────────────────────────────
+                  const Text(
+                    'Trusted by over 1,200 specialists nationwide',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.mutedText,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -49,103 +131,37 @@ class LandingPage extends StatelessWidget {
       ),
     );
   }
-}
 
-// ── Landing card extracted as a private widget ───────────────────────────────
-
-class _LandingCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final String primaryBtnText;
-  final String secondaryBtnText;
-  final String footerText;
-  final VoidCallback onPrimaryTap;
-  final VoidCallback? onSecondaryTap;
-
-  const _LandingCard({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.primaryBtnText,
-    required this.secondaryBtnText,
-    required this.footerText,
-    required this.onPrimaryTap,
-    this.onSecondaryTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      alignment: Alignment.center,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 340),
-        child: Column(
-          children: [
-            // ── Hero gradient card ─────────────────────────
-            _HeroCard(title: title, subtitle: subtitle, icon: icon),
-
-            const SizedBox(height: 30),
-
-            // ── Primary button ─────────────────────────────
-            _LandingButton(
-              label: primaryBtnText,
-              backgroundColor: AppColors.primaryColor,
-              foregroundColor: AppColors.white,
-              onTap: onPrimaryTap,
-            ),
-
-            // ── Secondary button ───────────────────────────
-            if (secondaryBtnText.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              _LandingButton(
-                label: secondaryBtnText,
-                backgroundColor: AppColors.primarySurface,
-                foregroundColor: AppColors.primaryColor,
-                onTap: onSecondaryTap,
-              ),
-            ] else
-              const SizedBox(height: 72),
-
-            const SizedBox(height: 36),
-
-            // ── Footer ─────────────────────────────────────
-            Text(
-              footerText,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.mutedText,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  void _routeToHome(BuildContext context, String role) {
+    // Import your home layouts at top of file
+    // This is called only if user lands here already authenticated
+    switch (role) {
+      case 'admin':
+        Navigator.pushReplacementNamed(context, '/admin/home');
+        break;
+      case 'doctor':
+        Navigator.pushReplacementNamed(context, '/doctor/home');
+        break;
+      default:
+        Navigator.pushReplacementNamed(context, '/user/home');
+    }
   }
 }
 
-// ── Hero gradient card ────────────────────────────────────────────────────────
-
+// ── Hero card ─────────────────────────────────────────────────────────────────
 class _HeroCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-
-  const _HeroCard({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-  });
+  final bool isMobile;
+  const _HeroCard({required this.isMobile});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 380,
+      height: isMobile ? 340 : 380,
       width: double.infinity,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(
+          Responsive.cardRadius(context),
+        ),
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -162,7 +178,7 @@ class _HeroCard extends StatelessWidget {
               angle: -0.1,
               child: Icon(
                 Icons.eco_rounded,
-                size: 240,
+                size: isMobile ? 200 : 240,
                 color: AppColors.white.withOpacity(0.4),
               ),
             ),
@@ -178,7 +194,11 @@ class _HeroCard extends StatelessWidget {
                 color: AppColors.primaryColor,
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: AppColors.white, size: 26),
+              child: const Icon(
+                Icons.spa_rounded,
+                color: AppColors.white,
+                size: 26,
+              ),
             ),
           ),
 
@@ -191,20 +211,20 @@ class _HeroCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 34,
+                  'The Clinical\nSanctuary',
+                  style: TextStyle(
+                    fontSize: isMobile ? 30 : 34,
                     fontWeight: FontWeight.w800,
                     color: AppColors.darkText,
                     height: 1.15,
                     letterSpacing: -0.8,
                   ),
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 16,
+                const SizedBox(height: 14),
+                const Text(
+                  'A mindful workspace designed\nfor modern psychiatric practice.',
+                  style: TextStyle(
+                    fontSize: 15,
                     color: AppColors.darkText,
                     height: 1.4,
                     fontWeight: FontWeight.w500,
@@ -219,16 +239,17 @@ class _HeroCard extends StatelessWidget {
   }
 }
 
-// ── Landing action button ─────────────────────────────────────────────────────
-
+// ── Landing button ────────────────────────────────────────────────────────────
 class _LandingButton extends StatelessWidget {
   final String label;
+  final IconData icon;
   final Color backgroundColor;
   final Color foregroundColor;
   final VoidCallback? onTap;
 
   const _LandingButton({
     required this.label,
+    required this.icon,
     required this.backgroundColor,
     required this.foregroundColor,
     this.onTap,
@@ -239,8 +260,16 @@ class _LandingButton extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       height: 56,
-      child: ElevatedButton(
+      child: ElevatedButton.icon(
         onPressed: onTap,
+        icon: Icon(icon, size: 20),
+        label: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         style: ElevatedButton.styleFrom(
           elevation: 0,
           backgroundColor: backgroundColor,
@@ -248,10 +277,6 @@ class _LandingButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(28),
           ),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
     );

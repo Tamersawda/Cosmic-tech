@@ -1,71 +1,106 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/core/utils/colors.dart';
+import 'package:frontend/core/utils/responsive_data.dart';
 import 'package:frontend/modules/admin/admin_layout.dart';
+import 'package:frontend/modules/auth/presentation/providers/auth_provider.dart';
 import 'package:frontend/modules/auth/presentation/screens/forgot_password_page.dart';
-import 'package:frontend/modules/auth/presentation/screens/registration_page.dart';
+import 'package:frontend/modules/auth/presentation/screens/landing_page.dart';
 import 'package:frontend/modules/auth/presentation/widgets/auth_header.dart';
 import 'package:frontend/modules/auth/presentation/widgets/auth_link_text.dart';
 import 'package:frontend/modules/auth/presentation/widgets/auth_page_card.dart';
 import 'package:frontend/modules/auth/presentation/widgets/auth_primary_button.dart';
 import 'package:frontend/modules/auth/presentation/widgets/auth_text_field.dart';
 import 'package:frontend/modules/doctor/presentation/router/main_doctor_layout.dart';
+import 'package:frontend/modules/doctor/presentation/screens/registration/basic_information.dart';
 import 'package:frontend/modules/user/presentation/router/main_user_layout.dart';
-import 'package:flutter/material.dart';
+import 'package:frontend/modules/user/presentation/screens/registration/user_registration_page.dart';
 
-class LoginPage extends StatefulWidget {
+class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends ConsumerState<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
-  final _passwordCtrl = TextEditingController();
-  bool _isLoading = false;
+  final _passCtrl = TextEditingController();
 
   @override
   void dispose() {
     _emailCtrl.dispose();
-    _passwordCtrl.dispose();
+    _passCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) return;
-    setState(() => _isLoading = true);
-
-    await Future.delayed(const Duration(milliseconds: 900));
+  // ── Handle state changes → navigate ───────────────────────────────────────
+  void _handleAuthState(AuthState? previous, AuthState next) {
     if (!mounted) return;
-    setState(() => _isLoading = false);
 
-    final email = _emailCtrl.text.trim().toLowerCase();
-    Widget destination;
-    if (email == 'admin@demo.com') {
-      destination = const AdminLayout();
-    } else if (email.contains('doctor') || email.contains('doc@')) {
-      destination = const MainDoctorLayout();
-    } else {
-      destination = const MainUserLayout();
+    // Login success → go to home based on role
+    if (next is AuthAuthenticated) {
+      _routeToHome(next.user.role);
     }
 
-    Navigator.pushAndRemoveUntil(
-      context,
-      _fadeRoute(destination),
-      (route) => false,
-    );
+    // Login success but profile not done → resume profile
+    // (happens when user registered but never finished profile,
+    //  then closes app and logs in again)
+    if (next is AuthRegistered) {
+      _routeToCompleteProfile(
+        next.user.role,
+        next.user.name, // ← fullName not name
+        next.user.email,
+      );
+    }
+  }
+
+  void _routeToHome(String role) {
+    final destination = switch (role) {
+      'admin' => const AdminLayout(),
+      'doctor' => const MainDoctorLayout(),
+      _ => const MainUserLayout(),
+    };
+    _pushAndRemove(destination);
+  }
+
+  void _routeToCompleteProfile(String role, String fullName, String email) {
+    final destination = switch (role) {
+      'doctor' => const BasicInformation(),
+      'admin' => const AdminLayout(),
+      _ => UserRegistrationPage(
+        name: fullName, // ← pass fullName
+        email: email,
+      ),
+    };
+    _pushAndRemove(destination);
+  }
+
+  void _pushAndRemove(Widget page) {
+    Navigator.pushAndRemoveUntil(context, _fadeRoute(page), (route) => false);
+  }
+
+  // ── Submit ────────────────────────────────────────────────────────────────
+  void _login() {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    // Clear any previous error before new attempt
+    ref.read(authProvider.notifier).clearError();
+    ref
+        .read(authProvider.notifier)
+        .login(email: _emailCtrl.text.trim(), password: _passCtrl.text);
   }
 
   void _goToForgotPassword() =>
       Navigator.push(context, _fadeRoute(const ForgotPasswordPage()));
 
   void _goToRegister() =>
-      Navigator.pushReplacement(context, _fadeRoute(const RegisterPage()));
+      Navigator.pushReplacement(context, _fadeRoute(const LandingPage()));
 
   PageRouteBuilder _fadeRoute(Widget page) => PageRouteBuilder(
-    pageBuilder: (_, _, _) => page,
+    pageBuilder: (_, __, ___) => page,
     transitionDuration: const Duration(milliseconds: 300),
-    transitionsBuilder: (_, animation, _, child) => FadeTransition(
+    transitionsBuilder: (_, animation, __, child) => FadeTransition(
       opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
       child: child,
     ),
@@ -73,6 +108,13 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AuthState>(authProvider, _handleAuthState);
+
+    final authState = ref.watch(authProvider);
+    final isLoading = authState is AuthLoading;
+    final errorMessage = authState is AuthError ? authState.message : null;
+    final spacing = Responsive.sectionSpacing(context);
+
     return AuthPageCard(
       child: Form(
         key: _formKey,
@@ -86,9 +128,9 @@ class _LoginPageState extends State<LoginPage> {
               subtitle: 'Sign in to your account',
             ),
 
-            const SizedBox(height: 36),
+            SizedBox(height: spacing),
 
-            // ── Email ──────────────────────────────────────
+            // ── Email ─────────────────────────────────────
             AuthTextField(
               controller: _emailCtrl,
               label: 'Email Address',
@@ -96,8 +138,8 @@ class _LoginPageState extends State<LoginPage> {
               prefixIcon: Icons.email_outlined,
               keyboardType: TextInputType.emailAddress,
               validator: (v) {
-                if (v!.isEmpty) return 'Email is required';
-                if (!RegExp(r'\S+@\S+\.\S+').hasMatch(v)) {
+                if (v!.trim().isEmpty) return 'Email is required';
+                if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v.trim())) {
                   return 'Enter a valid email';
                 }
                 return null;
@@ -106,9 +148,9 @@ class _LoginPageState extends State<LoginPage> {
 
             const SizedBox(height: 16),
 
-            // ── Password ───────────────────────────────────
+            // ── Password ──────────────────────────────────
             AuthTextField(
-              controller: _passwordCtrl,
+              controller: _passCtrl,
               label: 'Password',
               hint: 'Enter your password',
               prefixIcon: Icons.lock_outline_rounded,
@@ -119,30 +161,31 @@ class _LoginPageState extends State<LoginPage> {
 
             const SizedBox(height: 10),
 
-            // ── Forgot Password ────────────────────────────
+            // ── Forgot password ───────────────────────────
             AuthStandaloneLink(
               label: 'Forgot Password?',
               onTap: _goToForgotPassword,
               alignment: Alignment.centerRight,
             ),
 
-            const SizedBox(height: 22),
+            // ── Error banner ──────────────────────────────
+            if (errorMessage != null) ...[
+              const SizedBox(height: 14),
+              _ErrorBanner(message: errorMessage),
+            ],
 
-            // ── Demo Hint ─────────────────────────────────
-            const _DemoHint(),
+            SizedBox(height: spacing * 0.6),
 
-            const SizedBox(height: 18),
-
-            // ── Login Button ───────────────────────────────
+            // ── Sign in button ────────────────────────────
             AuthPrimaryButton(
               label: 'Sign In',
-              onTap: _login,
-              isLoading: _isLoading,
+              onTap: isLoading ? null : _login,
+              isLoading: isLoading,
             ),
 
             const SizedBox(height: 20),
 
-            // ── Register Link ──────────────────────────────
+            // ── Register link ─────────────────────────────
             AuthLinkText(
               prefix: "Don't have an account? ",
               linkText: 'Create one',
@@ -159,27 +202,37 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
-// ── Demo hint banner ─────────────────────────────────────────────────────────
-
-class _DemoHint extends StatelessWidget {
-  const _DemoHint();
+// ── Error banner ──────────────────────────────────────────────────────────────
+class _ErrorBanner extends StatelessWidget {
+  final String message;
+  const _ErrorBanner({required this.message});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.primarySurface,
-        borderRadius: BorderRadius.circular(8),
+        color: AppColors.dangerRed.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.dangerRed.withOpacity(0.25)),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.info_outline, size: 14, color: AppColors.primaryColor),
-          SizedBox(width: 8),
+          const Icon(
+            Icons.error_outline_rounded,
+            size: 15,
+            color: AppColors.dangerRed,
+          ),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Demo: "admin@demo.com" → Admin  |  "doc@demo.com" → Doctor  |  anything else → Patient',
-              style: TextStyle(fontSize: 11, color: AppColors.primaryColor),
+              message,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.dangerRed,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
