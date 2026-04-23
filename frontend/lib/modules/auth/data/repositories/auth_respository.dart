@@ -162,6 +162,6 @@ class AuthRepository {
   // ─── Logout ───────────────────────────────────────────────────────────────
   Future<void> logout() async {
     await _prefs.clearUser();
-    // await _api.logout(); // uncomment when backend endpoint is ready
+    await _api.logout(); // uncomment when backend endpoint is ready
   }
 }
