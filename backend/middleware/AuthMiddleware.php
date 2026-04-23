@@ -33,7 +33,7 @@ class AuthMiddleware {
      * Reads the 'role' claim from the JWT payload (canonical claim name).
      * Sends 403 JSON and exits on mismatch.
      *
-     * Valid roles: 'admin', 'doctor', 'patient'
+     * Valid roles: 'admin', 'doctor', 'client'
      */
     public static function requireRole(object $payload, string $role): void {
         $userRole = $payload->userType ?? $payload->role ?? null;

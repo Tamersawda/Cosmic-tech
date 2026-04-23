@@ -21,7 +21,7 @@ class AvailableSlotController {
      * GET /api/appointments/available-slots
      */
     public function getSlots(object $payload): void {
-        AuthMiddleware::requireRole($payload, 'patient');
+        AuthMiddleware::requireRole($payload, 'client');
 
         // Get query parameters
         $doctorId = $_GET['doctorId'] ?? null;

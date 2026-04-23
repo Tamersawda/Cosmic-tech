@@ -1,199 +1,130 @@
 <?php
 
-namespace Backend\Controllers;
+require_once __DIR__ . '/../models/DoctorProfile.php';
+require_once __DIR__ . '/../utils/Response.php';
+require_once __DIR__ . '/../utils/Validator.php';
 
-use Backend\Models\DoctorProfile;
-use Backend\Models\User;
-use Backend\Utils\Response;
-use Backend\Utils\Validator;
-use Backend\Middleware\AuthMiddleware;
+class DoctorProfileController
+{
+    private $doctorModel;
+    private $validator;
 
-class DoctorProfileController {
-    private DoctorProfile $profileModel;
-    private User $userModel;
-    private Validator $validator;
-
-    public function __construct() {
-        $this->profileModel = new DoctorProfile();
-        $this->userModel = new User();
+    public function __construct($db)
+    {
+        $this->doctorModel = new DoctorProfile($db);
         $this->validator = new Validator();
     }
 
-    /**
-     * Setup doctor profile
-     * POST /api/doctors/setup
-     */
-    public function setup(object $payload): void {
-        // Verify user is a doctor
-        AuthMiddleware::requireRole($payload, 'doctor');
+    public function setup($user)
+    {
+        $input = json_decode(file_get_contents("php://input"), true);
 
-        $input = $this->getInputData();
-        $userId = $payload->userId ?? $payload->user_id;
+        if (!$input) {
+            Response::error("Invalid JSON input", 400);
+            return;
+        }
 
-        // Validate required fields
-        $isValid = $this->validator->validate($input, [
-            'fullName'             => ['required', 'string'],
-            'gender'               => ['required', ['in', 'male', 'female', 'other', 'prefer_not_to_say']],
+        // 🔥 Block forbidden fields
+        $forbidden = ['fullName', 'firstName', 'lastName', 'age', 'medicalHistory'];
+        foreach ($forbidden as $field) {
+            if (isset($input[$field])) {
+                Response::error("Field '$field' is not allowed in profile setup", 400);
+                return;
+            }
+        }
+
+        // ✅ Validation rules
+        $validation = $this->validator->validate($input, [
+            'gender'               => ['required', ['in', 'male', 'female', 'other']],
             'dateOfBirth'          => ['required', 'string'],
             'phoneNumber'          => ['required', 'string'],
             'primarySpecialty'     => ['required', 'string'],
             'yearsOfExperience'    => ['required', 'numeric'],
             'licenseNumber'        => ['required', 'string'],
-            'languagesSpoken'      => ['required'],
-            'videoEnabled'         => ['required'],
+            'languagesSpoken'      => ['required', 'array'],
+            'videoEnabled'         => ['required', 'boolean'],
             'videoRate'            => ['required', 'numeric'],
+            'audioEnabled'         => ['boolean'],
+            'audioRate'            => ['numeric'],
             'consultationDuration' => ['required', ['in', '30min', '45min', '60min']],
             'bufferTime'           => ['required', ['in', '5min', '10min', '15min', '30min']],
+            'streetAddress'        => ['string'],
+            'city'                 => ['string'],
+            'state'                => ['string'],
+            'country'              => ['string'],
+            'postalCode'           => ['string'],
+            'subSpecializations'   => ['array']
         ]);
 
-        if (!$isValid) {
-            Response::validation($this->validator->getErrors());
+        if (!$validation['valid']) {
+            Response::error("Validation failed", 400, $validation['errors']);
             return;
         }
 
-        // Validate languagesSpoken is array
-        if (!is_array($input['languagesSpoken']) || empty($input['languagesSpoken'])) {
-            Response::validation(['languagesSpoken' => 'languagesSpoken must be a non-empty array']);
+        // 🔐 Use authenticated user_id
+        $userId = $user['id'];
+
+        // ❗ Prevent duplicate setup
+        if ($this->doctorModel->existsByUserId($userId)) {
+            Response::error("Doctor profile already exists", 409);
             return;
         }
 
-        // Validate dateOfBirth format (YYYY-MM-DD)
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $input['dateOfBirth'])) {
-            Response::validation(['dateOfBirth' => 'dateOfBirth must be in YYYY-MM-DD format']);
+        // 📦 Prepare data
+        $data = [
+            'user_id'              => $userId,
+            'gender'               => $input['gender'],
+            'date_of_birth'        => $input['dateOfBirth'],
+            'phone_number'         => $input['phoneNumber'],
+            'primary_specialty'    => $input['primarySpecialty'],
+            'sub_specializations'  => isset($input['subSpecializations']) 
+                                        ? json_encode($input['subSpecializations']) 
+                                        : json_encode([]),
+            'years_of_experience'  => $input['yearsOfExperience'],
+            'license_number'       => $input['licenseNumber'],
+            'medical_council'      => $input['medicalCouncil'] ?? null,
+            'languages_spoken'     => json_encode($input['languagesSpoken']),
+            'video_enabled'        => $input['videoEnabled'],
+            'video_rate'           => $input['videoRate'],
+            'audio_enabled'        => $input['audioEnabled'] ?? false,
+            'audio_rate'           => $input['audioRate'] ?? null,
+            'consultation_duration'=> $input['consultationDuration'],
+            'buffer_time'          => $input['bufferTime'],
+            'street_address'       => $input['streetAddress'] ?? null,
+            'city'                 => $input['city'] ?? null,
+            'state'                => $input['state'] ?? null,
+            'country'              => $input['country'] ?? null,
+            'postal_code'          => $input['postalCode'] ?? null
+        ];
+
+        // 💾 Save
+        $created = $this->doctorModel->create($data);
+
+        if (!$created) {
+            Response::error("Failed to create doctor profile", 500);
             return;
         }
 
-        // Check license number is unique
-        if ($this->profileModel->licenseExists($input['licenseNumber'], $userId)) {
-            Response::validation(['licenseNumber' => 'License number already exists']);
+        Response::success("Doctor profile created successfully");
+    }
+
+    public function getProfile($user)
+    {
+        $userId = $user['id'];
+
+        $profile = $this->doctorModel->getByUserId($userId);
+
+        if (!$profile) {
+            Response::error("Doctor profile not found", 404);
             return;
         }
 
-        try {
-            // Update doctor profile
-            $this->profileModel->setupProfile($userId, $input);
+        // Decode JSON fields
+        $profile['languagesSpoken'] = json_decode($profile['languages_spoken'], true);
+        $profile['subSpecializations'] = json_decode($profile['sub_specializations'], true);
 
-            // Get updated profile
-            $profile = $this->profileModel->findByUserId($userId);
+        unset($profile['languages_spoken'], $profile['sub_specializations']);
 
-            Response::success([
-                'doctorId'      => $userId,
-                'profileStatus' => 'completed',
-                'profile'       => [
-                    'fullName'          => $profile['full_name'],
-                    'primarySpecialty'  => $profile['primary_specialty'],
-                    'yearsOfExperience' => $profile['years_of_experience'],
-                    'licenseNumber'     => $profile['license_number'],
-                ],
-            ], 201);
-
-        } catch (\Exception $e) {
-            error_log("Doctor profile setup error: " . $e->getMessage());
-            $errorMsg = getenv('APP_ENV') === 'development' ? $e->getMessage() : 'Failed to setup profile';
-            Response::error($errorMsg, 500);
-        }
-    }
-
-    /**
-     * Get doctor appointments
-     * GET /api/doctors/appointments
-     */
-    public function getAppointments(object $payload): void {
-        AuthMiddleware::requireRole($payload, 'doctor');
-
-        $userId = $payload->userId ?? $payload->user_id;
-        $status = $_GET['status'] ?? null;
-
-        try {
-            $appointments = $this->profileModel->getAppointments($userId, $status);
-
-            Response::success([
-                'appointments' => $appointments,
-                'count' => count($appointments)
-            ], 200);
-
-        } catch (\Exception $e) {
-            error_log("Get appointments error: " . $e->getMessage());
-            Response::error('Failed to fetch appointments', 500);
-        }
-    }
-
-    /**
-     * List all doctors
-     * GET /api/doctors
-     */
-    public function list(object $payload): void {
-        try {
-            $doctors = $this->profileModel->getAllDoctors();
-
-            Response::success([
-                'doctors' => $doctors,
-                'count' => count($doctors)
-            ], 200);
-
-        } catch (\Exception $e) {
-            error_log("List doctors error: " . $e->getMessage());
-            $errorMsg = getenv('APP_ENV') === 'development' ? $e->getMessage() : 'Failed to fetch doctors';
-            Response::error($errorMsg, 500);
-        }
-    }
-
-    /**
-     * Get doctor by ID
-     * GET /api/doctors/{id}
-     */
-    public function getById(object $payload, string $doctorId): void {
-        try {
-            $doctor = $this->profileModel->findByUserId($doctorId);
-
-            if (!$doctor) {
-                Response::error('Doctor not found', 404);
-                return;
-            }
-
-            Response::success([
-                'id' => $doctorId,
-                'doctor' => $doctor
-            ], 200);
-
-        } catch (\Exception $e) {
-            error_log("Get doctor error: " . $e->getMessage());
-            Response::error('Failed to fetch doctor', 500);
-        }
-    }
-
-    /**
-     * Get current user's doctor profile
-     * GET /api/doctor-profile
-     */
-    public function getByUserId(object $payload): void {
-        AuthMiddleware::requireRole($payload, 'doctor');
-
-        try {
-            $userId = $payload->userId ?? $payload->user_id;
-            $doctor = $this->profileModel->findByUserId($userId);
-
-            if (!$doctor) {
-                Response::error('Doctor profile not found', 404);
-                return;
-            }
-
-            Response::success([
-                'doctor' => $doctor
-            ], 200);
-
-        } catch (\Exception $e) {
-            error_log("Get doctor profile error: " . $e->getMessage());
-            Response::error('Failed to fetch doctor profile', 500);
-        }
-    }
-
-    /**
-     * Parse input data from request
-     */
-    private function getInputData(): array {
-        $input = file_get_contents('php://input');
-        $data = json_decode($input, true) ?? [];
-        return array_merge($_GET, $_POST, $data);
+        Response::success($profile);
     }
 }

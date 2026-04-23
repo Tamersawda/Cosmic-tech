@@ -29,7 +29,7 @@ class AuthController {
     }
 
     /**
-     * Register new user (doctor or patient)
+     * Register new user (doctor or client)
      * POST /api/auth/register
      *
      * Request:
@@ -58,9 +58,9 @@ class AuthController {
             $input['userType'] = $role;
             $input['fullName'] = $name;
 
-            // role must be 'patient', or 'doctor'
-            if (empty($role) || !in_array($role, ['patient', 'doctor'], true)) {
-                Response::error('userType must be one of patient or doctor', 400);
+            // role must be 'client', or 'doctor'
+            if (empty($role) || !in_array($role, ['client', 'doctor'], true)) {
+                Response::error('userType must be one of client or doctor', 400);
                 return;
             }
 
@@ -98,13 +98,9 @@ class AuthController {
 
             // Create initial sub-profile skeleton
             if ($role === 'doctor') {
-                $this->userModel->createDoctorProfile($userId, [
-                    'name' => $name,
-                ]);
-            } elseif ($role === 'patient') {
-                $this->userModel->createPatientProfile($userId, [
-                    'name' => $name,
-                ]);
+                $this->userModel->createDoctorProfile($userId);
+            } elseif ($role === 'client') {
+                $this->userModel->createClientProfile($userId);
             }
 
             // Generate tokens so the user can navigate immediately after register
@@ -200,7 +196,7 @@ class AuthController {
             $name = $user['full_name'];
             $role = strtolower($user['user_type']);
 
-            if (!in_array($role, ['patient', 'doctor'], true)) {
+            if (!in_array($role, ['client', 'doctor', 'admin'], true)) {
                 Response::error("Invalid user role", 500);
                 return;
             }
@@ -253,7 +249,13 @@ class AuthController {
      */
     public function getCurrentUser(object $payload): void {
         try {
-            $user = $this->userModel->findById($payload->userId ?? $payload->user_id);
+            $userId = $payload->userId ?? $payload->user_id ?? null;
+            if (!$userId) {
+                Response::error('Invalid token payload', 400);
+                return;
+            }
+
+            $user = $this->userModel->findById($userId);
 
             if (!$user) {
                 Response::error('User not found', 404);
@@ -263,14 +265,34 @@ class AuthController {
             Response::success([
                 'userId'         => $user['id'],
                 'email'          => $user['email'],
-                'userType'       => $user['role'],
                 'fullName'       => $user['full_name'] ?? '',
-                'isEmailVerified'=> (bool)$user['is_email_verified'],
+                'userType'       => $user['role'], // role is alias for user_type
+                'isEmailVerified'=> (bool)($user['is_email_verified'] ?? true),
             ]);
 
         } catch (\Exception $e) {
             error_log('Get current user error: ' . $e->getMessage());
             Response::error($e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Logout user
+     * POST /api/auth/logout
+     * 
+     * Headers:
+     * Authorization: Bearer <token>
+     */
+    public function logout(object $payload): void {
+        try {
+            // For stateless JWT, we return a success response and the client must discard the token.
+            // If using a stateful refresh token database, you would invalidate it here.
+            Response::success([
+                'message' => 'Logged out successfully'
+            ], 200);
+        } catch (\Exception $e) {
+            error_log('Logout error: ' . $e->getMessage());
+            Response::error('Failed to logout', 500);
         }
     }
 

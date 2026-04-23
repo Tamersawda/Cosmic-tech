@@ -11,7 +11,7 @@ echo "=== PHASE 3 ROUTE VALIDATION ===\n\n";
 function testRoutePath($method, $path, $expectedMatch) {
     $path = strtolower(trim($path));
     
-    // Simulate route matching from api.php
+    // Simulate route matching from api.php / index.php
     $isDoctorSetupRequest = ($method === 'POST' && (
         $path === '/api/doctors/setup' ||
         $path === '/doctors/setup' ||
@@ -26,18 +26,18 @@ function testRoutePath($method, $path, $expectedMatch) {
         strpos($path, '/doctors/appointments') === 0
     ));
 
-    $isPatientSetupRequest = ($method === 'POST' && (
-        $path === '/api/patients/setup' ||
-        $path === '/patients/setup' ||
-        strpos($path, '/api/patients/setup') === 0 ||
-        strpos($path, '/patients/setup') === 0
+    $isClientSetupRequest = ($method === 'POST' && (
+        $path === '/api/clients/setup' ||
+        $path === '/clients/setup' ||
+        strpos($path, '/api/clients/setup') === 0 ||
+        strpos($path, '/clients/setup') === 0
     ));
 
-    $isPatientAppointmentsRequest = ($method === 'GET' && (
-        $path === '/api/patients/appointments' ||
-        $path === '/patients/appointments' ||
-        strpos($path, '/api/patients/appointments') === 0 ||
-        strpos($path, '/patients/appointments') === 0
+    $isClientAppointmentsRequest = ($method === 'GET' && (
+        $path === '/api/clients/appointments' ||
+        $path === '/clients/appointments' ||
+        strpos($path, '/api/clients/appointments') === 0 ||
+        strpos($path, '/clients/appointments') === 0
     ));
 
     $isAppointmentBookRequest = ($method === 'POST' && (
@@ -68,12 +68,12 @@ function testRoutePath($method, $path, $expectedMatch) {
     } elseif ($isDoctorAppointmentsRequest) {
         $matched = true;
         $result = 'DOCTOR_APPOINTMENTS';
-    } elseif ($isPatientSetupRequest) {
+    } elseif ($isClientSetupRequest) {
         $matched = true;
-        $result = 'PATIENT_SETUP';
-    } elseif ($isPatientAppointmentsRequest) {
+        $result = 'CLIENT_SETUP';
+    } elseif ($isClientAppointmentsRequest) {
         $matched = true;
-        $result = 'PATIENT_APPOINTMENTS';
+        $result = 'CLIENT_APPOINTMENTS';
     } elseif ($isAppointmentBookRequest) {
         $matched = true;
         $result = 'APPOINTMENT_BOOK';
@@ -101,11 +101,11 @@ $tests = [
     ['GET', '/api/doctors/appointments', 'DOCTOR_APPOINTMENTS'],
     ['GET', '/api/doctors/appointments?status=scheduled', 'DOCTOR_APPOINTMENTS'],
 
-    // Patient routes
-    ['POST', '/api/patients/setup', 'PATIENT_SETUP'],
-    ['POST', '/patients/setup', 'PATIENT_SETUP'],
-    ['GET', '/api/patients/appointments', 'PATIENT_APPOINTMENTS'],
-    ['GET', '/api/patients/appointments?status=scheduled', 'PATIENT_APPOINTMENTS'],
+    // Client routes
+    ['POST', '/api/clients/setup', 'CLIENT_SETUP'],
+    ['POST', '/clients/setup', 'CLIENT_SETUP'],
+    ['GET', '/api/clients/appointments', 'CLIENT_APPOINTMENTS'],
+    ['GET', '/api/clients/appointments?status=scheduled', 'CLIENT_APPOINTMENTS'],
 
     // Appointment routes
     ['POST', '/api/appointments', 'APPOINTMENT_BOOK'],
@@ -149,8 +149,8 @@ echo "   ✓ start_time + 50 minutes\n";
 echo "   ✓ Fixed 50 min consultation + 10 min buffer = 1 hour total\n";
 echo "   ✓ Stored in DB, not calculated dynamically\n\n";
 
-echo "4. Patient Conflict Detection:\n";
-echo "   ✓ Patient cannot have overlapping appointments\n";
+echo "4. Client Conflict Detection:\n";
+echo "   ✓ Client cannot have overlapping appointments\n";
 echo "   ✓ Same overlap detection logic as doctor\n\n";
 
 echo "5. License Uniqueness:\n";
@@ -159,10 +159,10 @@ echo "   ✓ Backend validation in DoctorProfile::setupProfile()\n\n";
 
 echo "6. Access Control:\n";
 echo "   ✓ Doctor setup: requires doctor role\n";
-echo "   ✓ Patient setup: requires patient role\n";
-echo "   ✓ Book appointment: requires patient role\n";
-echo "   ✓ Cancel appointment: requires patient role + ownership\n";
-echo "   ✓ Get appointments: role-based (doctor sees own, patient sees own)\n\n";
+echo "   ✓ Client setup: requires client role\n";
+echo "   ✓ Book appointment: requires client role\n";
+echo "   ✓ Cancel appointment: requires client role + ownership\n";
+echo "   ✓ Get appointments: role-based (doctor sees own, client sees own)\n\n";
 
 if ($failed === 0) {
     echo "✓ ALL ROUTES VALIDATED SUCCESSFULLY\n";

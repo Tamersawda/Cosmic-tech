@@ -67,11 +67,14 @@ class DoctorProfile {
      * Update the doctor profile with the data supplied via /api/doctors/setup.
      * All column names match the combined_schema.sql exactly.
      */
+    /**
+     * Update the doctor profile with the data supplied via /api/doctors/setup.
+     * All column names match the combined_schema.sql exactly.
+     */
     public function setupProfile(string $userId, array $data): bool {
         $stmt = $this->db->prepare('
             UPDATE doctor_profiles
             SET
-                full_name             = ?,
                 gender                = ?,
                 date_of_birth         = ?,
                 phone_number          = ?,
@@ -96,7 +99,6 @@ class DoctorProfile {
 
         try {
             return $stmt->execute([
-                $data['fullName']            ?? null,
                 $data['gender']              ?? 'other',
                 $data['dateOfBirth']         ?? null,
                 $data['phoneNumber']         ?? null,
@@ -205,23 +207,22 @@ class DoctorProfile {
 
     /**
      * Get upcoming/past appointments for a doctor, optionally filtered by status.
-     * Joins patient_profiles for patient name and age.
+     * Joins users for client name.
      */
     public function getAppointments(string $doctorId, ?string $status = null): array {
         $query = '
             SELECT
                 a.id,
                 a.doctor_id,
-                a.patient_id,
+                a.client_id,
                 a.scheduled_date,
                 a.scheduled_time,
                 a.end_time,
                 a.consultation_type,
                 a.status,
-                p.full_name AS patient_name,
-                p.age
+                u.full_name AS client_name
             FROM appointments a
-            JOIN patient_profiles p ON a.patient_id = p.user_id
+            JOIN users u ON a.client_id = u.id
             WHERE a.doctor_id = ?
         ';
 
@@ -258,7 +259,7 @@ class DoctorProfile {
             $stmt = $this->db->prepare('
                 SELECT
                     dp.user_id,
-                    dp.full_name,
+                    u.full_name,
                     dp.gender,
                     dp.primary_specialty,
                     dp.years_of_experience,
@@ -271,7 +272,7 @@ class DoctorProfile {
                     u.user_type
                 FROM doctor_profiles dp
                 JOIN users u ON dp.user_id = u.id
-                ORDER BY dp.full_name ASC
+                ORDER BY u.full_name ASC
             ');
             $stmt->execute();
             $results = $stmt->fetchAll(PDO::FETCH_ASSOC);

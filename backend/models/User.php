@@ -162,22 +162,20 @@ class User {
      * The profile will be fully completed via the /api/doctors/setup endpoint.
      *
      * @param string $userId  The users.id (CHAR 36 UUID)
-     * @param array  $data    Keys: name
      */
-    public function createDoctorProfile(string $userId, array $data): void {
+    public function createDoctorProfile(string $userId): void {
         $stmt = $this->db->prepare('
             INSERT INTO doctor_profiles (
-                user_id, full_name, gender, primary_specialty,
+                user_id, gender, primary_specialty,
                 license_number, medical_council, languages_spoken,
                 video_enabled, audio_enabled, consultation_duration,
                 buffer_time, instant_booking_enabled, years_of_experience,
                 onboarding_current_step, onboarding_percentage, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1, ?, ?, 0, 0, 1, 0, UTC_TIMESTAMP(), UTC_TIMESTAMP())
+            ) VALUES (?, ?, ?, ?, ?, ?, 1, 1, ?, ?, 0, 0, 1, 0, UTC_TIMESTAMP(), UTC_TIMESTAMP())
         ');
 
         $stmt->execute([
             $userId,
-            $data['name'] ?? '',
             'other',
             'General Practice',
             'TEMP_' . substr($userId, 0, 8),
@@ -189,23 +187,21 @@ class User {
     }
 
     /**
-     * Create the initial patient_profiles skeleton row when a patient registers.
-     * The profile will be fully completed via the /api/patients/setup endpoint.
+     * Create the initial client_profiles skeleton row when a client registers.
+     * The profile will be fully completed via the /api/clients/setup endpoint.
      *
      * @param string $userId  The users.id (CHAR 36 UUID)
-     * @param array  $data    Keys: name
      */
-    public function createPatientProfile(string $userId, array $data): void {
+    public function createClientProfile(string $userId): void {
         $stmt = $this->db->prepare('
-            INSERT INTO patient_profiles (
-                user_id, full_name, gender,
+            INSERT INTO client_profiles (
+                user_id, gender,
                 created_at, updated_at
-            ) VALUES (?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
+            ) VALUES (?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
         ');
 
         $stmt->execute([
             $userId,
-            $data['name'] ?? '',
             'other',
         ]);
     }

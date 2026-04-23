@@ -1,7 +1,7 @@
 <?php
 $url = 'http://localhost/Therapy%20Booking/backend/api/auth/login';
 $data = [
-    'email' => 'test_patient4@example.com',
+    'email' => 'test_client4@example.com',
     'password' => 'password123'
 ];
 

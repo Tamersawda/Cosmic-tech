@@ -129,17 +129,16 @@ class Consultation {
     }
 
     /**
-     * Allow patient to start consultation too
+     * Allow client to start consultation too
      */
-    public function startConsultationAsPatient(string $appointmentId, string $patientId): array {
-        try {
-            // Check appointment exists and belongs to patient
+    public function startConsultationAsClient(string $appointmentId, string $clientId): array {
+            // Check appointment exists and belongs to client
             $appointment = $this->getAppointment($appointmentId);
             if (!$appointment) {
                 throw new \Exception('Appointment not found');
             }
 
-            if ($appointment['patient_id'] !== $patientId) {
+            if ($appointment['client_id'] !== $clientId) {
                 throw new \Exception('Unauthorized');
             }
 
@@ -172,7 +171,7 @@ class Consultation {
             ];
 
         } catch (\Exception $e) {
-            error_log("Start consultation (patient) error: " . $e->getMessage());
+            error_log("Start consultation (client) error: " . $e->getMessage());
             throw $e;
         }
     }
@@ -279,17 +278,17 @@ class Consultation {
     }
 
     /**
-     * Get consultations for a patient
+     * Get consultations for a client
      */
-    public function getPatientConsultations(string $patientId): array {
+    public function getClientConsultations(string $clientId): array {
         $stmt = $this->db->prepare('
             SELECT cs.*
             FROM consultation_sessions cs
             JOIN appointments a ON cs.appointment_id = a.id
-            WHERE a.patient_id = ?
+            WHERE a.client_id = ?
             ORDER BY cs.started_at DESC
         ');
-        $stmt->execute([$patientId]);
+        $stmt->execute([$clientId]);
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($results as &$consultation) {

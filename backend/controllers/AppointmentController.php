@@ -4,7 +4,7 @@ namespace Backend\Controllers;
 
 use Backend\Models\Appointment;
 use Backend\Models\DoctorProfile;
-use Backend\Models\PatientProfile;
+use Backend\Models\ClientProfile;
 use Backend\Utils\Response;
 use Backend\Utils\Validator;
 use Backend\Middleware\AuthMiddleware;
@@ -12,13 +12,13 @@ use Backend\Middleware\AuthMiddleware;
 class AppointmentController {
     private Appointment   $appointmentModel;
     private DoctorProfile $doctorModel;
-    private PatientProfile $patientModel;
+    private ClientProfile $clientModel;
     private Validator     $validator;
 
     public function __construct() {
         $this->appointmentModel = new Appointment();
         $this->doctorModel      = new DoctorProfile();
-        $this->patientModel     = new PatientProfile();
+        $this->clientModel     = new ClientProfile();
         $this->validator        = new Validator();
     }
 
@@ -34,13 +34,13 @@ class AppointmentController {
      *   "consultationType": "video|audio"
      * }
      *
-     * Role required: 'patient' (patients)
+     * Role required: 'client'
      */
     public function book(object $payload): void {
-        AuthMiddleware::requireRole($payload, 'patient');
+        AuthMiddleware::requireRole($payload, 'client');
 
         $input     = $this->getInputData();
-        $patientId = $payload->userId ?? $payload->user_id;
+        $clientId = $payload->userId ?? $payload->user_id;
 
         $isValid = $this->validator->validate($input, [
             'doctorId'         => ['required', 'string'],
@@ -92,9 +92,9 @@ class AppointmentController {
                 return;
             }
 
-            // Patient must have a completed profile
-            if (!$this->patientModel->exists($patientId)) {
-                Response::error('Patient profile not found — complete your profile first', 404);
+            // Client must have a completed profile
+            if (!$this->clientModel->exists($clientId)) {
+                Response::error('Client profile not found — complete your profile first', 404);
                 return;
             }
 
@@ -111,9 +111,9 @@ class AppointmentController {
                 return;
             }
 
-            // Check patient does not have a conflicting appointment
-            if ($this->appointmentModel->hasPatientConflict(
-                $patientId, $scheduledDate, $scheduledTime, $endTime
+            // Check client does not have a conflicting appointment
+            if ($this->appointmentModel->hasClientConflict(
+                $clientId, $scheduledDate, $scheduledTime, $endTime
             )) {
                 Response::error('You already have an appointment at this time', 409);
                 return;
@@ -121,7 +121,7 @@ class AppointmentController {
 
             $appointmentId = $this->appointmentModel->create([
                 'doctor_id'         => $doctorId,
-                'patient_id'        => $patientId,
+                'client_id'        => $clientId,
                 'scheduled_date'    => $scheduledDate,
                 'scheduled_time'    => $scheduledTime,
                 'end_time'          => $endTime,
@@ -147,13 +147,13 @@ class AppointmentController {
     }
 
     /**
-     * Get appointments for the authenticated user (doctor or patient)
+     * Get appointments for the authenticated user (doctor or client)
      * GET /api/appointments
      *
-     * Role required: 'doctor' or 'patient'
+     * Role required: 'doctor' or 'client'
      */
     public function getAppointments(object $payload): void {
-        AuthMiddleware::requireRoles($payload, ['doctor', 'patient']);
+        AuthMiddleware::requireRoles($payload, ['doctor', 'client']);
 
         $userId   = $payload->user_id ?? $payload->userId;
         $userRole = $payload->role ?? $payload->userType; // Handle both cases
@@ -177,10 +177,10 @@ class AppointmentController {
      * Cancel an appointment
      * PATCH /api/appointments/{id}/cancel
      *
-     * Role required: 'patient' (patients)
+     * Role required: 'client'
      */
     public function cancel(object $payload, string $appointmentId): void {
-        AuthMiddleware::requireRole($payload, 'patient');
+        AuthMiddleware::requireRole($payload, 'client');
 
         $userId = $payload->userId ?? $payload->user_id;
 
@@ -192,7 +192,7 @@ class AppointmentController {
                 return;
             }
 
-            if ($appointment['patient_id'] !== $userId) {
+            if ($appointment['client_id'] !== $userId) {
                 Response::error('You can only cancel your own appointments', 403);
                 return;
             }
@@ -228,9 +228,8 @@ class AppointmentController {
                 return;
             }
 
-            // Only the doctor or patient belonging to this appointment may view it
-            $userId = $payload->userId ?? $payload->user_id;
-            if ($appointment['doctor_id'] !== $userId && $appointment['patient_id'] !== $userId) {
+            // Only the doctor or client belonging to this appointment may view it
+            if ($appointment['doctor_id'] !== $userId && $appointment['client_id'] !== $userId) {
                 Response::error('Forbidden', 403);
                 return;
             }
@@ -273,24 +272,18 @@ class AppointmentController {
         }
     }
 
-    /**
-     * Get patient's appointments
-     * GET /api/appointments/patient
-     *
-     * Role required: 'patient'
-     */
-    public function getPatientAppointments(object $payload): void {
-        AuthMiddleware::requireRole($payload, 'patient');
+    public function getClientAppointments(object $payload): void {
+        AuthMiddleware::requireRole($payload, 'client');
 
         try {
-            $appointments = $this->appointmentModel->getByPatient($payload->userId ?? $payload->user_id);
+            $appointments = $this->appointmentModel->getByClient($payload->userId ?? $payload->user_id);
             Response::success([
                 'appointments' => $appointments,
                 'count'        => count($appointments),
             ], 200);
 
         } catch (\Exception $e) {
-            error_log('Get patient appointments error: ' . $e->getMessage());
+            error_log('Get client appointments error: ' . $e->getMessage());
             Response::error('Failed to fetch appointments', 500);
         }
     }

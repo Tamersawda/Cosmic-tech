@@ -66,11 +66,11 @@ class Appointment {
     }
 
     /**
-     * CRITICAL: Check for patient's conflicting appointments
+     * CRITICAL: Check for client's conflicting appointments
      * Condition: new_start < existing_end AND new_end > existing_start
      */
-    public function hasPatientConflict(
-        string $patientId,
+    public function hasClientConflict(
+        string $clientId,
         string $scheduledDate,
         string $scheduledTime,
         string $endTime,
@@ -78,7 +78,7 @@ class Appointment {
     ): bool {
         $query = '
             SELECT 1 FROM appointments
-            WHERE patient_id = ?
+            WHERE client_id = ?
             AND scheduled_date = ?
             AND status IN ("scheduled", "in_progress")
             AND scheduled_time < ?
@@ -86,7 +86,7 @@ class Appointment {
         ';
 
         $params = [
-            $patientId,
+            $clientId,
             $scheduledDate,
             $endTime,           // new_start < existing_end
             $scheduledTime      // new_end > existing_start
@@ -112,7 +112,7 @@ class Appointment {
 
         $stmt = $this->db->prepare('
             INSERT INTO appointments (
-                id, doctor_id, patient_id, scheduled_date,
+                id, doctor_id, client_id, scheduled_date,
                 scheduled_time, end_time, consultation_type,
                 status, created_at, updated_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, "scheduled", UTC_TIMESTAMP(), UTC_TIMESTAMP())
@@ -121,7 +121,7 @@ class Appointment {
         $stmt->execute([
             $appointmentId,
             $data['doctor_id'],
-            $data['patient_id'],
+            $data['client_id'],
             $data['scheduled_date'],
             $data['scheduled_time'],
             $data['end_time'],
@@ -132,26 +132,26 @@ class Appointment {
     }
 
     /**
-     * Get appointments for doctor or patient
+     * Get appointments for doctor or client
      */
     public function getByUser(string $userId, string $userType, ?string $status = null): array {
         if ($userType === 'doctor') {
             $field = 'doctor_id';
         } else {
-            $field = 'patient_id';
+            $field = 'client_id';
         }
 
         $query = "
             SELECT a.*,
                 CASE 
-                    WHEN '$userType' = 'doctor' THEN p.first_name
+                    WHEN '$userType' = 'doctor' THEN c.full_name
                     ELSE d.full_name
                 END as other_party_name
             FROM appointments a
         ";
 
         if ($userType === 'doctor') {
-            $query .= ' LEFT JOIN patient_profiles p ON a.patient_id = p.user_id';
+            $query .= ' LEFT JOIN client_profiles c ON a.client_id = c.user_id';
         } else {
             $query .= ' LEFT JOIN doctor_profiles d ON a.doctor_id = d.user_id';
         }
@@ -220,11 +220,8 @@ class Appointment {
         return $stmt->execute($values);
     }
 
-    /**
-     * Get appointments for a patient
-     */
-    public function getByPatient(string $patientId, ?string $status = null): array {
-        return $this->getByUser($patientId, 'patient', $status);
+    public function getByClient(string $clientId, ?string $status = null): array {
+        return $this->getByUser($clientId, 'client', $status);
     }
 
     /**

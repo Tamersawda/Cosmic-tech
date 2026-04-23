@@ -18,7 +18,7 @@ class MessageController {
      * POST /api/appointments/{id}/messages
      */
     public function send(object $payload, string $appointmentId): void {
-        AuthMiddleware::requireRoles($payload, ['doctor', 'patient']);
+        AuthMiddleware::requireRoles($payload, ['doctor', 'client']);
 
         $userId = $payload->userId ?? $payload->user_id;
         $input = $this->getInputData();
@@ -79,7 +79,7 @@ class MessageController {
      * GET /api/appointments/{id}/messages
      */
     public function getAppointmentMessages(object $payload, string $appointmentId): void {
-        AuthMiddleware::requireRoles($payload, ['doctor', 'patient']);
+        AuthMiddleware::requireRoles($payload, ['doctor', 'client']);
 
         $userId = $payload->userId ?? $payload->user_id;
         $page = (int)($_GET['page'] ?? 1);
@@ -127,7 +127,7 @@ class MessageController {
      * POST /api/messages
      */
     public function sendMessage(object $payload): void {
-        AuthMiddleware::requireRoles($payload, ['doctor', 'patient']);
+        AuthMiddleware::requireRoles($payload, ['doctor', 'client']);
 
         $userId = $payload->userId ?? $payload->user_id;
         $input = $this->getInputData();

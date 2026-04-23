@@ -1,10 +1,10 @@
 <?php
 $url = 'http://localhost/Therapy%20Booking/backend/api/auth/register';
 $data = [
-    'email' => 'test_patient4@example.com',
-    'password' => 'password123',
-    'userType' => 'patient',
-    'fullName' => 'Test Patient 4'
+    'email' => 'test_client4@example.com',
+    'password' => 'Pass1234!',
+    'userType' => 'client',
+    'fullName' => 'Test Client 4'
 ];
 
 $options = [

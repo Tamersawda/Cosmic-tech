@@ -29,7 +29,7 @@ class Message {
             }
 
             // Validate user belongs to appointment
-            if ($appointment['doctor_id'] !== $senderId && $appointment['patient_id'] !== $senderId) {
+            if ($appointment['doctor_id'] !== $senderId && $appointment['client_id'] !== $senderId) {
                 throw new \Exception('Unauthorized');
             }
 
@@ -78,7 +78,7 @@ class Message {
                 throw new \Exception('Appointment not found');
             }
 
-            if ($appointment['doctor_id'] !== $userId && $appointment['patient_id'] !== $userId) {
+            if ($appointment['doctor_id'] !== $userId && $appointment['client_id'] !== $userId) {
                 throw new \Exception('Unauthorized');
             }
 

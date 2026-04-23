@@ -21,7 +21,7 @@ class ConsultationController {
      * POST /api/consultations/{appointmentId}/start
      */
     public function start(object $payload, string $appointmentId): void {
-        AuthMiddleware::requireRoles($payload, ['doctor', 'patient']);
+        AuthMiddleware::requireRoles($payload, ['doctor', 'client']);
 
         $userId = $payload->userId ?? $payload->user_id;
         $userType = $payload->userType ?? $payload->user_type ?? $payload->role;
@@ -32,7 +32,7 @@ class ConsultationController {
             if ($userType === 'doctor') {
                 $result = $this->consultationModel->startConsultation($appointmentId, $userId);
             } else {
-                $result = $this->consultationModel->startConsultationAsPatient($appointmentId, $userId);
+                $result = $this->consultationModel->startConsultationAsClient($appointmentId, $userId);
             }
 
             Response::success($result, 201);
@@ -147,18 +147,18 @@ class ConsultationController {
     }
 
     /**
-     * Get patient consultations
-     * GET /api/consultations/patient
+     * Get client consultations
+     * GET /api/consultations/client
      */
-    public function getPatientConsultations(object $payload): void {
-        AuthMiddleware::requireRole($payload, 'patient');
+    public function getClientConsultations(object $payload): void {
+        AuthMiddleware::requireRole($payload, 'client');
 
         try {
-            $consultations = $this->consultationModel->getPatientConsultations($payload->userId ?? $payload->user_id);
+            $consultations = $this->consultationModel->getClientConsultations($payload->userId ?? $payload->user_id);
             Response::success(['consultations' => $consultations, 'count' => count($consultations)], 200);
 
         } catch (\Exception $e) {
-            error_log("Get patient consultations error: " . $e->getMessage());
+            error_log("Get client consultations error: " . $e->getMessage());
             Response::error('Failed to fetch consultations', 500);
         }
     }

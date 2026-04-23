@@ -87,20 +87,20 @@ test_endpoint \
 DOCTOR_TOKEN=$(echo "$response" | head -n -1 | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4 || echo "")
 
 # ============================================================
-# Test 2: Registration - Patient
+# Test 2: Registration - Client
 # ============================================================
-PATIENT_EMAIL="patient_$(date +%s)@test.com"
-PATIENT_PASSWORD="PatPass123"
+CLIENT_EMAIL="client_$(date +%s)@test.com"
+CLIENT_PASSWORD="CliPass123"
 
 test_endpoint \
-    "Registration - Patient" \
+    "Registration - Client" \
     "POST" \
     "/api/auth/register" \
-    "{\"email\":\"$PATIENT_EMAIL\",\"password\":\"$PATIENT_PASSWORD\",\"userType\":\"patient\",\"fullName\":\"John Doe\"}" \
+    "{\"email\":\"$CLIENT_EMAIL\",\"password\":\"$CLIENT_PASSWORD\",\"userType\":\"client\",\"fullName\":\"John Doe\"}" \
     "" \
     "201"
 
-PATIENT_TOKEN=$(echo "$response" | head -n -1 | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4 || echo "")
+CLIENT_TOKEN=$(echo "$response" | head -n -1 | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4 || echo "")
 
 # ============================================================
 # Test 3: Duplicate Email Registration
@@ -109,7 +109,7 @@ test_endpoint \
     "Duplicate Email Registration (Should Fail)" \
     "POST" \
     "/api/auth/register" \
-    "{\"email\":\"$DOCTOR_EMAIL\",\"password\":\"DifferentPass123\",\"userType\":\"patient\",\"fullName\":\"Different User\"}" \
+    "{\"email\":\"$DOCTOR_EMAIL\",\"password\":\"DifferentPass123\",\"userType\":\"client\",\"fullName\":\"Different User\"}" \
     "" \
     "409"
 

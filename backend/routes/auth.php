@@ -7,36 +7,47 @@ use Backend\Utils\Response;
 /**
  * Authentication Routes
  *
- * POST /api/auth/register  - Register (role: admin|doctor|user)
+ * POST /api/auth/register  - Register (role: doctor|client)
  * POST /api/auth/login     - Login
+ * POST /api/auth/logout    - Logout (protected)
  * GET  /api/auth/me        - Get current user (protected)
  */
 return function(string $method, string $path) {
     $controller = new AuthController();
-
     $path = strtolower(trim($path));
 
-    $matchesPath = function(string $path, string $pattern): bool {
-        $pattern = strtolower(trim($pattern));
-        return strpos($path, $pattern) === 0
-            || $path === $pattern
-            || $path === '/' . $pattern
-            || $path === $pattern . '/';
-    };
+    // Normalize path (remove leading /api/auth if present for easier matching)
+    $normalizedPath = $path;
+    if (strpos($path, '/api/auth') === 0) {
+        $normalizedPath = substr($path, 9);
+    } elseif (strpos($path, '/auth') === 0) {
+        $normalizedPath = substr($path, 5);
+    }
+    
+    if (empty($normalizedPath)) $normalizedPath = '/';
 
     if ($method === 'POST') {
-        if ($matchesPath($path, '/api/auth/register') || $matchesPath($path, 'api/auth/register')) {
+        if ($normalizedPath === '/register') {
             $controller->register();
             return;
         }
-        if ($matchesPath($path, '/api/auth/login') || $matchesPath($path, 'api/auth/login')) {
+        if ($normalizedPath === '/login') {
             $controller->login();
+            return;
+        }
+        if ($normalizedPath === '/logout') {
+            $payload = AuthMiddleware::authenticate();
+            if ($payload === null) {
+                Response::error('Unauthorized', 401);
+                return;
+            }
+            $controller->logout($payload);
             return;
         }
     }
 
     if ($method === 'GET') {
-        if ($matchesPath($path, '/api/auth/me') || $matchesPath($path, 'api/auth/me')) {
+        if ($normalizedPath === '/me') {
             $payload = AuthMiddleware::authenticate();
             if ($payload === null) {
                 Response::error('Unauthorized', 401);
@@ -47,5 +58,5 @@ return function(string $method, string $path) {
         }
     }
 
-    Response::error('Route not found: ' . $method . ' ' . $path, 404);
+    Response::error('Route not found in Auth: ' . $method . ' ' . $path, 404);
 };

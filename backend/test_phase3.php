@@ -3,7 +3,7 @@
  * Manual Testing Script for Phase 3 Implementation
  * Tests:
  * 1. Doctor profile setup
- * 2. Patient profile setup  
+ * 2. Client profile setup  
  * 3. Appointment booking with overlap detection
  * 4. Appointment cancellation
  */
@@ -19,10 +19,10 @@ echo "POST /api/doctors/setup\n";
 echo "Expected Response: 201 with doctor_id and profile_status=completed\n";
 echo "Payload: fullName, gender, dateOfBirth, phoneNumber, primarySpecialty, yearsOfExperience, licenseNumber, languagesSpoken, videoEnabled, videoRate, consultationDuration, bufferTime\n\n";
 
-// Test 2: Patient Profile Setup
-echo "TEST 2: Patient Profile Setup\n";
-echo "POST /api/patients/setup\n";
-echo "Expected Response: 201 with patient_id and profile_status=completed\n";
+// Test 2: Client Profile Setup
+echo "TEST 2: Client Profile Setup\n";
+echo "POST /api/clients/setup\n";
+echo "Expected Response: 201 with client_id and profile_status=completed\n";
 echo "Payload: firstName, lastName, gender, dateOfBirth, phoneNumber\n\n";
 
 // Test 3: Book Valid Appointment
@@ -56,9 +56,9 @@ echo "TEST 7: Get Doctor Appointments\n";
 echo "GET /api/doctors/appointments (or GET /api/appointments for doctors)\n";
 echo "Expected Response: 200 with list of appointments\n\n";
 
-// Test 8: Get Patient Appointments
-echo "TEST 8: Get Patient Appointments\n";
-echo "GET /api/patients/appointments (or GET /api/appointments for patients)\n";
+// Test 8: Get Client Appointments
+echo "TEST 8: Get Client Appointments\n";
+echo "GET /api/clients/appointments (or GET /api/appointments for clients)\n";
 echo "Expected Response: 200 with list of appointments\n\n";
 
 // Test 9: Cancel Appointment
@@ -84,8 +84,8 @@ echo "3. END TIME:\n";
 echo "   - Calculated as start_time + 50 minutes\n";
 echo "   - Stored in DB, not calculated dynamically\n\n";
 
-echo "4. PATIENT CONFLICT CHECK:\n";
-echo "   - Patient should not have overlapping appointments\n";
+echo "4. CLIENT CONFLICT CHECK:\n";
+echo "   - Client should not have overlapping appointments\n";
 echo "   - Same overlap detection logic applied\n\n";
 
 echo "5. LICENSE UNIQUENESS:\n";
@@ -97,9 +97,9 @@ echo "DOCTOR PROFILE:\n";
 echo "  POST   /api/doctors/setup                   - Setup profile\n";
 echo "  GET    /api/doctors/appointments            - View appointments\n\n";
 
-echo "PATIENT PROFILE:\n";
-echo "  POST   /api/patients/setup                  - Setup profile\n";
-echo "  GET    /api/patients/appointments           - View appointments\n\n";
+echo "CLIENT PROFILE:\n";
+echo "  POST   /api/clients/setup                   - Setup profile\n";
+echo "  GET    /api/clients/appointments            - View appointments\n\n";
 
 echo "APPOINTMENTS:\n";
 echo "  POST   /api/appointments                    - Book appointment\n";
