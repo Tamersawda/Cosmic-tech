@@ -1,5 +1,5 @@
 <?php
-die("NEW VALIDATOR LOADED");
+namespace Backend\Utils;
 class Validator
 {
     public function validate($data, $rules)

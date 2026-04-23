@@ -2,33 +2,38 @@
 
 /**
  * API Entry Point
- * 
- * Handles routing for the Cosmic Tech Backend.
+ * Handles routing for the backend.
  */
 
-// Enable error reporting for development
+// -----------------------------
+// Error reporting (dev only)
+// -----------------------------
 if (getenv('APP_ENV') === 'development') {
     error_reporting(E_ALL);
     ini_set('display_errors', 1);
 }
 
-// Load environment variables
+// -----------------------------
+// Load .env
+// -----------------------------
 if (file_exists(__DIR__ . '/.env')) {
     $lines = file(__DIR__ . '/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach ($lines as $line) {
         if (strpos($line, '#') === 0) continue;
         if (strpos($line, '=') === false) continue;
-        
+
         [$key, $value] = explode('=', $line, 2);
         putenv(trim($key) . '=' . trim($value));
     }
 }
 
-// Autoloader
+// -----------------------------
+// Autoloader (PSR-like)
+// -----------------------------
 if (file_exists(__DIR__ . '/vendor/autoload.php')) {
     require_once __DIR__ . '/vendor/autoload.php';
 } else {
-    spl_autoload_register(function($class) {
+    spl_autoload_register(function ($class) {
         $prefix = 'Backend\\';
         if (strpos($class, $prefix) === 0) {
             $relativeClass = substr($class, strlen($prefix));
@@ -40,70 +45,92 @@ if (file_exists(__DIR__ . '/vendor/autoload.php')) {
     });
 }
 
-// CORS headers
+// -----------------------------
+// CORS
+// -----------------------------
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 header('Content-Type: application/json');
 
-// Handle preflight requests
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
 }
 
-// Get request method and path
+// -----------------------------
+// Extract clean path (CRITICAL FIX)
+// -----------------------------
 $method = $_SERVER['REQUEST_METHOD'];
-$requestUri = $_SERVER['REQUEST_URI'];
-$path = parse_url($requestUri, PHP_URL_PATH);
 
-// Clean path - remove base paths
-$basePaths = [
-    '/cosmic-tech/backend',
-    '/Therapy%20Booking/backend',
-    '/Therapy Booking/backend',
-    '/backend',
-];
+// Full URI path
+$uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
-foreach ($basePaths as $basePath) {
-    if (strpos($path, $basePath) === 0) {
-        $path = substr($path, strlen($basePath));
-        break;
-    }
+// Detect current script directory dynamically
+$scriptName = $_SERVER['SCRIPT_NAME']; 
+$baseDir = dirname($scriptName);
+
+// Normalize slashes
+$baseDir = rtrim(str_replace('\\', '/', $baseDir), '/');
+
+// Remove base directory from URI
+if (strpos($uri, $baseDir) === 0) {
+    $path = substr($uri, strlen($baseDir));
+} else {
+    $path = $uri;
 }
 
-// Ensure path starts with /
-if (empty($path) || $path === '') $path = '/';
+// Final normalization
+if ($path === '' || $path === false) $path = '/';
 if ($path[0] !== '/') $path = '/' . $path;
 
-// Routing logic
-if (strpos($path, '/api/auth') !== false || strpos($path, '/auth') === 0) {
-    $router = require __DIR__ . '/routes/auth.php';
-    $router($method, $path);
-} elseif (strpos($path, '/api/clients') !== false || strpos($path, '/clients') === 0) {
-    $router = require __DIR__ . '/routes/clients.php';
-    $router($method, $path);
-} elseif (strpos($path, '/api/doctors') !== false || strpos($path, '/doctors') === 0) {
-    $router = require __DIR__ . '/routes/doctors.php';
-    $router($method, $path);
-} elseif (strpos($path, '/api/admin') !== false || strpos($path, '/admin') === 0) {
-    $router = require __DIR__ . '/routes/admin.php';
-    $router($method, $path);
-} elseif (strpos($path, '/api/consultations') !== false || strpos($path, '/consultations') === 0) {
-    $router = require __DIR__ . '/routes/consultations.php';
-    $router($method, $path);
-} elseif (strpos($path, '/api/messages') !== false || strpos($path, '/messages') === 0) {
-    $router = require __DIR__ . '/routes/messages.php';
-    $router($method, $path);
-} else {
-    // Legacy support for other routes in api.php
-    if (file_exists(__DIR__ . '/api.php')) {
-        require __DIR__ . '/api.php';
+// -----------------------------
+// Routing (STRICT MATCHING)
+// -----------------------------
+try {
+
+    if (strpos($path, '/api/auth') === 0 || strpos($path, '/auth') === 0) {
+        $router = require __DIR__ . '/routes/auth.php';
+        $router($method, $path);
+
+    } elseif (strpos($path, '/api/clients') === 0 || strpos($path, '/clients') === 0) {
+        $router = require __DIR__ . '/routes/clients.php';
+        $router($method, $path);
+
+    } elseif (strpos($path, '/api/doctors') === 0 || strpos($path, '/doctors') === 0) {
+        $router = require __DIR__ . '/routes/doctors.php';
+        $router($method, $path);
+
+    } elseif (strpos($path, '/api/admin') === 0 || strpos($path, '/admin') === 0) {
+        $router = require __DIR__ . '/routes/admin.php';
+        $router($method, $path);
+
+    } elseif (strpos($path, '/api/consultations') === 0 || strpos($path, '/consultations') === 0) {
+        $router = require __DIR__ . '/routes/consultations.php';
+        $router($method, $path);
+
+    } elseif (strpos($path, '/api/messages') === 0 || strpos($path, '/messages') === 0) {
+        $router = require __DIR__ . '/routes/messages.php';
+        $router($method, $path);
+
     } else {
-        http_response_code(404);
-        echo json_encode([
-            'success' => false,
-            'message' => 'Route not found: ' . $method . ' ' . $path
-        ]);
+        // Fallback (legacy support)
+        if (file_exists(__DIR__ . '/api.php')) {
+            require __DIR__ . '/api.php';
+        } else {
+            http_response_code(404);
+            echo json_encode([
+                'success' => false,
+                'message' => "Route not found: $method $path"
+            ]);
+        }
     }
+
+} catch (Throwable $e) {
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Internal Server Error',
+        'error' => getenv('APP_ENV') === 'development' ? $e->getMessage() : null
+    ]);
 }

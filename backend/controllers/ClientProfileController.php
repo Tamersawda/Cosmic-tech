@@ -1,5 +1,4 @@
 <?php
-
 namespace Backend\Controllers;
 
 use Backend\Models\ClientProfile;
