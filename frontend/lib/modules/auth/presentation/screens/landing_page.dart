@@ -6,6 +6,9 @@ import 'package:frontend/core/utils/responsive_data.dart';
 import 'package:frontend/modules/auth/presentation/providers/auth_provider.dart';
 import 'package:frontend/modules/auth/presentation/screens/login_page.dart';
 import 'package:frontend/modules/auth/presentation/screens/registration_page.dart';
+import 'package:frontend/modules/admin/admin_layout.dart';
+import 'package:frontend/modules/doctor/presentation/router/main_doctor_layout.dart';
+import 'package:frontend/modules/user/presentation/router/main_user_layout.dart';
 
 class LandingPage extends ConsumerWidget {
   const LandingPage({super.key});
@@ -133,18 +136,30 @@ class LandingPage extends ConsumerWidget {
   }
 
   void _routeToHome(BuildContext context, String role) {
-    // Import your home layouts at top of file
-    // This is called only if user lands here already authenticated
+    Widget destination;
     switch (role) {
       case 'admin':
-        Navigator.pushReplacementNamed(context, '/admin/home');
+        destination = const AdminLayout();
         break;
       case 'doctor':
-        Navigator.pushReplacementNamed(context, '/doctor/home');
+        destination = const MainDoctorLayout();
         break;
       default:
-        Navigator.pushReplacementNamed(context, '/user/home');
+        destination = const MainUserLayout();
     }
+    
+    Navigator.pushAndRemoveUntil(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (_, __, ___) => destination,
+        transitionDuration: const Duration(milliseconds: 300),
+        transitionsBuilder: (_, animation, __, child) => FadeTransition(
+          opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+          child: child,
+        ),
+      ),
+      (route) => false,
+    );
   }
 }
 

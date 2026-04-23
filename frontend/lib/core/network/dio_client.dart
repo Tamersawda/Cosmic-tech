@@ -59,16 +59,23 @@ class _AuthInterceptor extends Interceptor {
 
       case DioExceptionType.badResponse:
         final statusCode = e.response?.statusCode;
+        final data = e.response?.data;
         if (statusCode == 401) return const UnauthorisedException();
         if (statusCode == 422) {
-          final errors = e.response?.data?['errors'];
-          final message = errors != null
-              ? (errors as Map).values.first[0]
-              : e.response?.data?['message'] ?? 'Validation failed.';
-          return ServerException(message.toString(), statusCode: statusCode);
+          if (data is Map) {
+            final errors = data['errors'];
+            final message = errors != null
+                ? (errors as Map).values.first[0]
+                : data['message'] ?? 'Validation failed.';
+            return ServerException(message.toString(), statusCode: statusCode);
+          }
+          return ServerException(data?.toString() ?? 'Validation failed.', statusCode: statusCode);
         }
-        final message = e.response?.data?['message']?.toString() ??
-            'Server error ($statusCode).';
+        
+        final message = data is Map
+            ? (data['message']?.toString() ?? 'Server error ($statusCode).')
+            : data?.toString() ?? 'Server error ($statusCode).';
+            
         return ServerException(message, statusCode: statusCode);
 
       case DioExceptionType.connectionError:
@@ -114,6 +121,7 @@ class _LogInterceptor extends Interceptor {
     debugPrint('\n$_divider');
     debugPrint('❌ ERROR     : ${err.type.name}');
     debugPrint('💬 Message  : ${err.message}');
+    debugPrint('🐛 Underlying: ${err.error}');
     if (err.response != null) {
       debugPrint('📨 Body     : ${err.response?.data}');
     }

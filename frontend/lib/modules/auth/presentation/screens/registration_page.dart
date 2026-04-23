@@ -78,7 +78,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           name: _nameCtrl.text.trim(), // ← fullName
           email: _emailCtrl.text.trim(),
           password: _passCtrl.text,
-          role: widget.role.name, // ← userType not role
+          role: widget.role.apiValue, // maps UserRole.user → 'patient'
         );
   }
 

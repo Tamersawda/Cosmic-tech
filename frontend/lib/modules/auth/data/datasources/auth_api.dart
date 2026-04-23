@@ -105,48 +105,48 @@ class AuthApi {
         final statusCode = e.response?.statusCode;
         final data       = e.response?.data;
 
+        // Helper to safely extract message
+        String extractMessage(String defaultMsg) {
+          if (data is Map) {
+            return data['message']?.toString() ?? defaultMsg;
+          }
+          return data?.toString() ?? defaultMsg;
+        }
+
         // ── 400 Bad Request ──────────────────────────────
         if (statusCode == 400) {
-          final message = data?['message']?.toString() ??
-              'Bad request. Please check your input.';
-          return ServerException(message, statusCode: 400);
+          return ServerException(extractMessage('Bad request. Please check your input.'), statusCode: 400);
         }
 
         // ── 401 Unauthorised ─────────────────────────────
         if (statusCode == 401) {
-          final message = data?['message']?.toString() ??
-              'Session expired. Please log in again.';
-          return UnauthorisedException(message);
+          return UnauthorisedException(extractMessage('Session expired. Please log in again.'));
         }
 
         // ── 403 Forbidden ────────────────────────────────
         if (statusCode == 403) {
-          final message = data?['message']?.toString() ??
-              'You do not have permission to perform this action.';
-          return ServerException(message, statusCode: 403);
+          return ServerException(extractMessage('You do not have permission to perform this action.'), statusCode: 403);
         }
 
         // ── 404 Not found ────────────────────────────────
         if (statusCode == 404) {
-          final message = data?['message']?.toString() ??
-              'The requested resource was not found.';
-          return ServerException(message, statusCode: 404);
+          return ServerException(extractMessage('The requested resource was not found.'), statusCode: 404);
         }
 
         // ── 409 Conflict (email already exists) ──────────
         if (statusCode == 409) {
-          final message = data?['message']?.toString() ??
-              'An account with this email already exists.';
-          return ServerException(message, statusCode: 409);
+          return ServerException(extractMessage('An account with this email already exists.'), statusCode: 409);
         }
 
         // ── 422 Validation error ─────────────────────────
         if (statusCode == 422) {
-          final errors  = data?['errors'];
-          final message = errors != null
-              ? (errors as Map).values.first[0].toString()
-              : data?['message']?.toString() ?? 'Validation failed.';
-          return ServerException(message, statusCode: 422);
+          if (data is Map && data['errors'] != null) {
+            final errors = data['errors'] as Map;
+            if (errors.isNotEmpty) {
+              return ServerException(errors.values.first[0].toString(), statusCode: 422);
+            }
+          }
+          return ServerException(extractMessage('Validation failed.'), statusCode: 422);
         }
 
         // ── 429 Too many requests ─────────────────────────
@@ -166,9 +166,7 @@ class AuthApi {
         }
 
         // ── Fallback ─────────────────────────────────────
-        final message = data?['message']?.toString() ??
-            'Server error ($statusCode).';
-        return ServerException(message, statusCode: statusCode);
+        return ServerException(extractMessage('Server error ($statusCode).'), statusCode: statusCode);
 
       case DioExceptionType.connectionTimeout:
         return const NetworkException(
