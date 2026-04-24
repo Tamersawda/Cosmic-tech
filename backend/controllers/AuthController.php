@@ -223,7 +223,7 @@ class AuthController {
 
                 if ($criticalMissing) {
                     $resetStmt = $db->prepare(
-                        'UPDATE users SET is_profile_completed = FALSE, onboarding_step = 1 WHERE id = ?'
+                        'UPDATE users SET is_profile_completed = 0, onboarding_step = 1 WHERE id = ?'
                     );
                     $resetStmt->execute([$user['id']]);
                     // Refresh values so the response reflects the corrected state.
