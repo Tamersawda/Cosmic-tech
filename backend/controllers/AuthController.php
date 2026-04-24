@@ -125,6 +125,8 @@ class AuthController {
                 'userType'     => $role,
                 'token'        => $token,
                 'refreshToken' => $refreshToken,
+                'is_profile_completed' => false,
+                'onboarding_step' => 0,
             ]);
 
         } catch (\Exception $e) {
@@ -201,6 +203,35 @@ class AuthController {
                 return;
             }
 
+            // ------------------------------------------------------------------
+            // Fix 8: Runtime migration safety check (client only).
+            // If the DB says profile is complete but critical fields are missing,
+            // reset onboarding state so the frontend resumes correctly.
+            // Critical fields: client_profiles.first_name, phone_number.
+            // ------------------------------------------------------------------
+            if ($role === 'client' && (bool)$user['is_profile_completed']) {
+                $db = \Backend\Config\Database::getInstance();
+                $chkStmt = $db->prepare(
+                    'SELECT first_name, phone_number FROM client_profiles WHERE user_id = ? LIMIT 1'
+                );
+                $chkStmt->execute([$user['id']]);
+                $profile = $chkStmt->fetch(\PDO::FETCH_ASSOC);
+
+                $criticalMissing = !$profile
+                    || empty($profile['first_name'])
+                    || empty($profile['phone_number']);
+
+                if ($criticalMissing) {
+                    $resetStmt = $db->prepare(
+                        'UPDATE users SET is_profile_completed = FALSE, onboarding_step = 1 WHERE id = ?'
+                    );
+                    $resetStmt->execute([$user['id']]);
+                    // Refresh values so the response reflects the corrected state.
+                    $user['is_profile_completed'] = 0;
+                    $user['onboarding_step']       = 1;
+                }
+            }
+
             $token = JWT::encode([
                 'userId'   => $user['id'],
                 'userType' => $role,
@@ -215,12 +246,14 @@ class AuthController {
             ], 7 * 24 * 3600);
 
             Response::success([
-                'userId'       => $user['id'],
-                'fullName'     => $name,
-                'email'        => $user['email'],
-                'userType'     => $role,
-                'token'        => $token,
-                'refreshToken' => $refreshToken,
+                'userId'               => $user['id'],
+                'fullName'             => $name,
+                'email'                => $user['email'],
+                'userType'             => $role,
+                'token'                => $token,
+                'refreshToken'         => $refreshToken,
+                'is_profile_completed' => (bool)$user['is_profile_completed'],
+                'onboarding_step'      => (int)$user['onboarding_step'],
             ], 200);
 
         } catch (\Exception $e) {

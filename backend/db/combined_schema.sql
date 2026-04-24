@@ -65,6 +65,8 @@ CREATE TABLE users (
     full_name                   VARCHAR(255)    NOT NULL DEFAULT '',
     user_type                   ENUM('admin', 'doctor', 'user') NOT NULL,
     is_active                   TINYINT(1)      NOT NULL DEFAULT 1,
+    is_profile_completed        BOOLEAN         DEFAULT FALSE,
+    onboarding_step             INT             DEFAULT 0,
 
     -- Reserved for future OTP email-verification flow (not active in MVP)
     is_email_verified           TINYINT(1)      NOT NULL DEFAULT 1,
