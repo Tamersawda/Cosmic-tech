@@ -132,7 +132,7 @@ class Consultation {
      * Allow client to start consultation too
      */
     public function startConsultationAsClient(string $appointmentId, string $clientId): array {
-            // Check appointment exists and belongs to client
+        try {
             $appointment = $this->getAppointment($appointmentId);
             if (!$appointment) {
                 throw new \Exception('Appointment not found');
