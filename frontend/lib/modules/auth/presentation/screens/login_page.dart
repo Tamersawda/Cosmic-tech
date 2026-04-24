@@ -6,11 +6,11 @@ import 'package:frontend/modules/admin/admin_layout.dart';
 import 'package:frontend/modules/auth/presentation/providers/auth_provider.dart';
 import 'package:frontend/modules/auth/presentation/screens/forgot_password_page.dart';
 import 'package:frontend/modules/auth/presentation/screens/landing_page.dart';
-import 'package:frontend/modules/auth/presentation/widgets/auth_header.dart';
-import 'package:frontend/modules/auth/presentation/widgets/auth_link_text.dart';
-import 'package:frontend/modules/auth/presentation/widgets/auth_page_card.dart';
-import 'package:frontend/modules/auth/presentation/widgets/auth_primary_button.dart';
-import 'package:frontend/modules/auth/presentation/widgets/auth_text_field.dart';
+import 'package:frontend/modules/auth/presentation/screens/widgets/auth_header.dart';
+import 'package:frontend/modules/auth/presentation/screens/widgets/auth_link_text.dart';
+import 'package:frontend/modules/auth/presentation/screens/widgets/auth_page_card.dart';
+import 'package:frontend/modules/auth/presentation/screens/widgets/auth_primary_button.dart';
+import 'package:frontend/modules/auth/presentation/screens/widgets/auth_text_field.dart';
 import 'package:frontend/modules/doctor/presentation/router/main_doctor_layout.dart';
 import 'package:frontend/modules/doctor/presentation/screens/registration/basic_information.dart';
 import 'package:frontend/modules/user/presentation/router/main_user_layout.dart';
@@ -24,9 +24,9 @@ class LoginPage extends ConsumerStatefulWidget {
 }
 
 class _LoginPageState extends ConsumerState<LoginPage> {
-  final _formKey = GlobalKey<FormState>();
+  final _formKey   = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
-  final _passCtrl = TextEditingController();
+  final _passCtrl  = TextEditingController();
 
   @override
   void dispose() {
@@ -35,60 +35,69 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     super.dispose();
   }
 
-  // ── Handle state changes → navigate ───────────────────────────────────────
+  // ── Handle state → navigate ───────────────────────────────────────────────
   void _handleAuthState(AuthState? previous, AuthState next) {
     if (!mounted) return;
 
-    // Login success → go to home based on role
-    if (next is AuthAuthenticated) {
-      _routeToHome(next.user.role);
-    }
+    switch (next) {
+      // Login success + profile complete → home
+      case AuthAuthenticated(:final user):
+        _routeToHome(user.role);
 
-    // Login success but profile not done → resume profile
-    // (happens when user registered but never finished profile,
-    //  then closes app and logs in again)
-    if (next is AuthRegistered) {
-      _routeToCompleteProfile(
-        next.user.role,
-        next.user.name, // ← fullName not name
-        next.user.email,
-      );
+      // Login success + profile NOT complete → resume onboarding
+      case AuthNeedsProfile(:final user):
+        _routeToCompleteProfile(
+          userType:       user.role,
+          onboardingStep: user.onboardingStep,
+        );
+
+      // Ignore all other states
+      default:
+        break;
     }
   }
 
-  void _routeToHome(String role) {
-    final destination = switch (role) {
-      'admin' => const AdminLayout(),
+  // ── Route to home based on userType ──────────────────────────────────────
+  void _routeToHome(String userType) {
+    final destination = switch (userType) {
+      'admin'  => const AdminLayout(),
       'doctor' => const MainDoctorLayout(),
-      _ => const MainUserLayout(),
+      _        => const MainUserLayout(),   // client / user
     };
     _pushAndRemove(destination);
   }
 
-  void _routeToCompleteProfile(String role, String fullName, String email) {
-    final destination = switch (role) {
+  // ── Route to correct onboarding screen ───────────────────────────────────
+  void _routeToCompleteProfile({
+    required String userType,
+    required int    onboardingStep,
+  }) {
+    final destination = switch (userType) {
+      // Doctor has 4 steps — BasicInformation handles routing internally
       'doctor' => const BasicInformation(),
-      'admin' => const AdminLayout(),
-      _ => UserRegistrationPage(
-        name: fullName, // ← pass fullName
-        email: email,
-      ),
+      'admin'  => const AdminLayout(),
+      // Client has 1 step — always UserRegistrationPage
+      _        => const UserRegistrationPage(),
     };
     _pushAndRemove(destination);
   }
 
   void _pushAndRemove(Widget page) {
-    Navigator.pushAndRemoveUntil(context, _fadeRoute(page), (route) => false);
+    Navigator.pushAndRemoveUntil(
+      context,
+      _fadeRoute(page),
+      (route) => false,
+    );
   }
 
   // ── Submit ────────────────────────────────────────────────────────────────
   void _login() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    // Clear any previous error before new attempt
     ref.read(authProvider.notifier).clearError();
-    ref
-        .read(authProvider.notifier)
-        .login(email: _emailCtrl.text.trim(), password: _passCtrl.text);
+    ref.read(authProvider.notifier).login(
+      email:    _emailCtrl.text.trim(),
+      password: _passCtrl.text,
+    );
   }
 
   void _goToForgotPassword() =>
@@ -98,22 +107,22 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       Navigator.pushReplacement(context, _fadeRoute(const LandingPage()));
 
   PageRouteBuilder _fadeRoute(Widget page) => PageRouteBuilder(
-    pageBuilder: (_, __, ___) => page,
-    transitionDuration: const Duration(milliseconds: 300),
-    transitionsBuilder: (_, animation, __, child) => FadeTransition(
-      opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
-      child: child,
-    ),
-  );
+        pageBuilder:        (_, __, ___) => page,
+        transitionDuration: const Duration(milliseconds: 300),
+        transitionsBuilder: (_, animation, __, child) => FadeTransition(
+          opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+          child:   child,
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
     ref.listen<AuthState>(authProvider, _handleAuthState);
 
-    final authState = ref.watch(authProvider);
-    final isLoading = authState is AuthLoading;
+    final authState    = ref.watch(authProvider);
+    final isLoading    = authState is AuthLoading;
     final errorMessage = authState is AuthError ? authState.message : null;
-    final spacing = Responsive.sectionSpacing(context);
+    final spacing      = Responsive.sectionSpacing(context);
 
     return AuthPageCard(
       child: Form(
@@ -123,8 +132,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           children: [
             // ── Header ────────────────────────────────────
             const AuthPageHeader(
-              icon: Icons.lock_open_rounded,
-              title: 'Welcome Back',
+              icon:     Icons.lock_open_rounded,
+              title:    'Welcome Back',
               subtitle: 'Sign in to your account',
             ),
 
@@ -132,14 +141,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
             // ── Email ─────────────────────────────────────
             AuthTextField(
-              controller: _emailCtrl,
-              label: 'Email Address',
-              hint: 'you@example.com',
-              prefixIcon: Icons.email_outlined,
+              controller:   _emailCtrl,
+              label:        'Email Address',
+              hint:         'you@example.com',
+              prefixIcon:   Icons.email_outlined,
               keyboardType: TextInputType.emailAddress,
               validator: (v) {
                 if (v!.trim().isEmpty) return 'Email is required';
-                if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v.trim())) {
+                if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+                    .hasMatch(v.trim())) {
                   return 'Enter a valid email';
                 }
                 return null;
@@ -150,21 +160,22 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
             // ── Password ──────────────────────────────────
             AuthTextField(
-              controller: _passCtrl,
-              label: 'Password',
-              hint: 'Enter your password',
-              prefixIcon: Icons.lock_outline_rounded,
+              controller:  _passCtrl,
+              label:       'Password',
+              hint:        'Enter your password',
+              prefixIcon:  Icons.lock_outline_rounded,
               obscureText: true,
-              showToggle: true,
-              validator: (v) => v!.isEmpty ? 'Password is required' : null,
+              showToggle:  true,
+              validator:   (v) =>
+                  v!.isEmpty ? 'Password is required' : null,
             ),
 
             const SizedBox(height: 10),
 
             // ── Forgot password ───────────────────────────
             AuthStandaloneLink(
-              label: 'Forgot Password?',
-              onTap: _goToForgotPassword,
+              label:     'Forgot Password?',
+              onTap:     _goToForgotPassword,
               alignment: Alignment.centerRight,
             ),
 
@@ -178,8 +189,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
             // ── Sign in button ────────────────────────────
             AuthPrimaryButton(
-              label: 'Sign In',
-              onTap: isLoading ? null : _login,
+              label:     'Sign In',
+              onTap:     isLoading ? null : _login,
               isLoading: isLoading,
             ),
 
@@ -187,9 +198,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
             // ── Register link ─────────────────────────────
             AuthLinkText(
-              prefix: "Don't have an account? ",
+              prefix:   "Don't have an account? ",
               linkText: 'Create one',
-              onTap: _goToRegister,
+              onTap:    _goToRegister,
             ),
 
             const SizedBox(height: 16),
@@ -210,18 +221,20 @@ class _ErrorBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
+      width:   double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.dangerRed.withOpacity(0.08),
+        color:        AppColors.dangerRed.withOpacity(0.08),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.dangerRed.withOpacity(0.25)),
+        border: Border.all(
+          color: AppColors.dangerRed.withOpacity(0.25),
+        ),
       ),
       child: Row(
         children: [
           const Icon(
             Icons.error_outline_rounded,
-            size: 15,
+            size:  15,
             color: AppColors.dangerRed,
           ),
           const SizedBox(width: 8),
@@ -229,8 +242,8 @@ class _ErrorBanner extends StatelessWidget {
             child: Text(
               message,
               style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.dangerRed,
+                fontSize:   12,
+                color:      AppColors.dangerRed,
                 fontWeight: FontWeight.w500,
               ),
             ),

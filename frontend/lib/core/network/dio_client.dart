@@ -60,7 +60,12 @@ class _AuthInterceptor extends Interceptor {
       case DioExceptionType.badResponse:
         final statusCode = e.response?.statusCode;
         final data = e.response?.data;
-        if (statusCode == 401) return const UnauthorisedException();
+        if (statusCode == 401) {
+          final msg = data is Map
+              ? (data['message']?.toString() ?? 'Session expired. Please log in again.')
+              : 'Session expired. Please log in again.';
+          return UnauthorisedException(msg);
+        }
         if (statusCode == 422) {
           if (data is Map) {
             final errors = data['errors'];

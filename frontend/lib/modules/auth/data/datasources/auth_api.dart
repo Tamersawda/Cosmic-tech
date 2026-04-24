@@ -12,19 +12,19 @@ class AuthApi {
 
   // ─── Register ─────────────────────────────────────────────────────────────
   Future<UserModel> register({
-    required String name,
+    required String name,  // ← backend field
     required String email,
     required String password,
-    required String role,
+    required String role,  // ← backend field
   }) async {
     try {
       final response = await _dio.post(
         ApiConstansts.registrationUrl,
         data: {
-          'name': name,
+          'name': name,   // ← matches backend
           'email':    email,
           'password': password,
-          'role': role,
+          'role': role,   // ← matches backend
         },
       );
       return _parseUser(response.data);
@@ -65,15 +65,11 @@ class AuthApi {
   }
 
   // ─── Logout ───────────────────────────────────────────────────────────────
-  // Uncomment when backend endpoint is ready
-  /*
   Future<void> logout() async {
     try {
       await _dio.post(ApiConstansts.logoutUrl);
     } on DioException catch (e) {
       _logError('logout', e);
-      // Only throw on server errors
-      // Network errors are silently ignored so local session still clears
       if (e.type == DioExceptionType.badResponse) {
         throw _handleError(e);
       }
@@ -81,7 +77,6 @@ class AuthApi {
       _logUnknown('logout', e);
     }
   }
-  */
 
   // ─── Parse response → UserModel ───────────────────────────────────────────
   UserModel _parseUser(dynamic data) {
@@ -92,7 +87,7 @@ class AuthApi {
       throw const ParseException('Unexpected response format.');
     }
     try {
-      return UserModel.fromJson(data);
+      return UserModel.fromJson(data); // fromJson handles the data wrapper
     } catch (_) {
       throw const ParseException('Failed to parse user data.');
     }
@@ -105,7 +100,6 @@ class AuthApi {
         final statusCode = e.response?.statusCode;
         final data       = e.response?.data;
 
-        // Helper to safely extract message
         String extractMessage(String defaultMsg) {
           if (data is Map) {
             return data['message']?.toString() ?? defaultMsg;
@@ -113,89 +107,89 @@ class AuthApi {
           return data?.toString() ?? defaultMsg;
         }
 
-        // ── 400 Bad Request ──────────────────────────────
         if (statusCode == 400) {
-          return ServerException(extractMessage('Bad request. Please check your input.'), statusCode: 400);
+          return ServerException(
+            extractMessage('Bad request. Please check your input.'),
+            statusCode: 400,
+          );
         }
-
-        // ── 401 Unauthorised ─────────────────────────────
         if (statusCode == 401) {
-          return UnauthorisedException(extractMessage('Session expired. Please log in again.'));
+          return UnauthorisedException(
+            extractMessage('Session expired. Please log in again.'),
+          );
         }
-
-        // ── 403 Forbidden ────────────────────────────────
         if (statusCode == 403) {
-          return ServerException(extractMessage('You do not have permission to perform this action.'), statusCode: 403);
+          return ServerException(
+            extractMessage('You do not have permission.'),
+            statusCode: 403,
+          );
         }
-
-        // ── 404 Not found ────────────────────────────────
         if (statusCode == 404) {
-          return ServerException(extractMessage('The requested resource was not found.'), statusCode: 404);
+          return ServerException(
+            extractMessage('Resource not found.'),
+            statusCode: 404,
+          );
         }
-
-        // ── 409 Conflict (email already exists) ──────────
         if (statusCode == 409) {
-          return ServerException(extractMessage('An account with this email already exists.'), statusCode: 409);
+          return ServerException(
+            extractMessage('An account with this email already exists.'),
+            statusCode: 409,
+          );
         }
-
-        // ── 422 Validation error ─────────────────────────
         if (statusCode == 422) {
           if (data is Map && data['errors'] != null) {
             final errors = data['errors'] as Map;
             if (errors.isNotEmpty) {
-              return ServerException(errors.values.first[0].toString(), statusCode: 422);
+              return ServerException(
+                errors.values.first[0].toString(),
+                statusCode: 422,
+              );
             }
           }
-          return ServerException(extractMessage('Validation failed.'), statusCode: 422);
+          return ServerException(
+            extractMessage('Validation failed.'),
+            statusCode: 422,
+          );
         }
-
-        // ── 429 Too many requests ─────────────────────────
         if (statusCode == 429) {
           return const ServerException(
-            'Too many attempts. Please wait a moment and try again.',
+            'Too many attempts. Please wait and try again.',
             statusCode: 429,
           );
         }
-
-        // ── 500+ Server errors ───────────────────────────
         if (statusCode != null && statusCode >= 500) {
           return const ServerException(
             'Something went wrong on the server. Please try again later.',
             statusCode: 500,
           );
         }
-
-        // ── Fallback ─────────────────────────────────────
-        return ServerException(extractMessage('Server error ($statusCode).'), statusCode: statusCode);
+        return ServerException(
+          extractMessage('Server error ($statusCode).'),
+          statusCode: statusCode,
+        );
 
       case DioExceptionType.connectionTimeout:
         return const NetworkException(
           'Connection timed out. Please check your internet.',
         );
-
       case DioExceptionType.sendTimeout:
         return const NetworkException(
           'Request timed out while sending. Please try again.',
         );
-
       case DioExceptionType.receiveTimeout:
         return const NetworkException(
           'Server took too long to respond. Please try again.',
         );
-
       case DioExceptionType.connectionError:
         return const NetworkException(
           'Unable to connect. Please check your internet connection.',
         );
-
       case DioExceptionType.badCertificate:
         return const NetworkException(
           'Security certificate error. Please contact support.',
         );
-
       case DioExceptionType.cancel:
         return const UnknownException('Request was cancelled.');
-
       default:
         return const UnknownException(
           'An unexpected error occurred. Please try again.',
@@ -203,14 +197,14 @@ class AuthApi {
     }
   }
 
-  // ─── Debug logging (debug builds only) ───────────────────────────────────
+  // ─── Debug logging ────────────────────────────────────────────────────────
   void _logError(String method, DioException e) {
     if (!kDebugMode) return;
     debugPrint('┌─── AuthApi.$method ERROR ───────────────────');
-    debugPrint('│ Type       : ${e.type.name}');
-    debugPrint('│ Status     : ${e.response?.statusCode}');
-    debugPrint('│ Data       : ${e.response?.data}');
-    debugPrint('│ Message    : ${e.message}');
+    debugPrint('│ Type   : ${e.type.name}');
+    debugPrint('│ Status : ${e.response?.statusCode}');
+    debugPrint('│ Data   : ${e.response?.data}');
+    debugPrint('│ Message: ${e.message}');
     debugPrint('└─────────────────────────────────────────────');
   }
 

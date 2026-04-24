@@ -9,17 +9,20 @@ use PDO;
  * ClientProfile Model
  * Manages the client_profiles table.
  */
-class ClientProfile {
+class ClientProfile
+{
     private PDO $db;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->db = Database::getInstance();
     }
 
     /**
      * Get a client profile by user ID.
      */
-    public function findByUserId(string $userId): ?array {
+    public function findByUserId(string $userId): ?array
+    {
         $stmt = $this->db->prepare('
             SELECT * FROM client_profiles
             WHERE user_id = ?
@@ -50,19 +53,19 @@ class ClientProfile {
      * @throws \RuntimeException   with a user-facing message on validation failure
      * @throws \Exception          on DB failure
      */
-    public function saveStepAndState(string $userId, array $fields, int $incomingStep, bool $isCompleted): void {
+    public function saveStepAndState(string $userId, array $fields, int $incomingStep, bool $isCompleted): void
+    {
 
         // ------------------------------------------------------------------
         // Field map: camelCase input → snake_case client_profiles column.
         // ------------------------------------------------------------------
         $allowedFields = [
-            'firstName'          => 'first_name',
-            'lastName'           => 'last_name',
-            'gender'             => 'gender',
-            'dateOfBirth'        => 'date_of_birth',
-            'phoneNumber'        => 'phone_number',
-            'medicalHistory'     => 'medical_history',
-            'allergies'          => 'allergies',
+            'name' => 'full_name',
+            'gender' => 'gender',
+            'dateOfBirth' => 'date_of_birth',
+            'phoneNumber' => 'phone_number',
+            'medicalHistory' => 'medical_history',
+            'allergies' => 'allergies',
             'currentMedications' => 'current_medications',
         ];
 
@@ -71,29 +74,29 @@ class ClientProfile {
         // Fix 4: No silent skip (controller already rejects empty values).
         // ------------------------------------------------------------------
         $setClause = [];
-        $params    = [];
+        $params = [];
 
         foreach ($fields as $key => $value) {
             if ($key === 'emergencyContact') {
                 if (is_array($value)) {
                     if (isset($value['name'])) {
                         $setClause[] = 'emergency_contact_name = ?';
-                        $params[]    = $value['name'];
+                        $params[] = $value['name'];
                     }
                     if (isset($value['relationship'])) {
                         $setClause[] = 'emergency_contact_relationship = ?';
-                        $params[]    = $value['relationship'];
+                        $params[] = $value['relationship'];
                     }
                     // Fix 3 mapping: Use 'phoneNumber' as validated by controller
                     if (isset($value['phoneNumber'])) {
                         $setClause[] = 'emergency_contact_phone = ?';
-                        $params[]    = $value['phoneNumber'];
+                        $params[] = $value['phoneNumber'];
                     }
                 }
             } elseif (isset($allowedFields[$key])) {
-                $dbField     = $allowedFields[$key];
+                $dbField = $allowedFields[$key];
                 $setClause[] = "{$dbField} = ?";
-                $params[]    = is_array($value) ? json_encode($value) : $value;
+                $params[] = is_array($value) ? json_encode($value) : $value;
             }
         }
 
@@ -116,8 +119,8 @@ class ClientProfile {
                 throw new \RuntimeException('User not found');
             }
 
-            $lockedStep      = (int)$lockedRow['onboarding_step'];
-            $lockedCompleted = (bool)$lockedRow['is_profile_completed'];
+            $lockedStep = (int) $lockedRow['onboarding_step'];
+            $lockedCompleted = (bool) $lockedRow['is_profile_completed'];
 
             if ($lockedCompleted) {
                 throw new \RuntimeException('Profile already completed');
@@ -144,9 +147,9 @@ class ClientProfile {
             // STEP 5: UPDATE client_profiles.
             // --------------------------------------------------------------
             $setClause[] = 'updated_at = UTC_TIMESTAMP()';
-            $params[]    = $userId;
+            $params[] = $userId;
 
-            $sql      = 'UPDATE client_profiles SET ' . implode(', ', $setClause) . ' WHERE user_id = ?';
+            $sql = 'UPDATE client_profiles SET ' . implode(', ', $setClause) . ' WHERE user_id = ?';
             $profStmt = $this->db->prepare($sql);
             $profStmt->execute($params);
 
@@ -186,7 +189,8 @@ class ClientProfile {
      * Get a client's appointments, optionally filtered by status.
      * Joins users for doctor name and doctor_profiles for specialty.
      */
-    public function getAppointments(string $clientId, ?string $status = null): array {
+    public function getAppointments(string $clientId, ?string $status = null): array
+    {
         $query = '
             SELECT
                 a.id,
@@ -222,7 +226,8 @@ class ClientProfile {
     /**
      * Check whether a client profile exists for the given user ID.
      */
-    public function exists(string $clientId): bool {
+    public function exists(string $clientId): bool
+    {
         $stmt = $this->db->prepare('
             SELECT 1 FROM client_profiles WHERE user_id = ? LIMIT 1
         ');

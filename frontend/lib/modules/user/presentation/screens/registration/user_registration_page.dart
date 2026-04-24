@@ -3,19 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/core/utils/colors.dart';
 import 'package:frontend/core/utils/responsive_data.dart';
-import 'package:frontend/modules/user/presentation/provider/user_prefole_provider.dart';
+import 'package:frontend/modules/user/presentation/provider/user_profile_provider.dart';
 import 'package:frontend/modules/user/presentation/router/main_user_layout.dart';
 import 'package:frontend/modules/user/presentation/screens/quiz/wellness_intro_screen.dart';
+import 'package:intl/intl.dart';
 
 class UserRegistrationPage extends ConsumerStatefulWidget {
-  final String name;
-  final String email;
-
-  const UserRegistrationPage({
-    super.key,
-    required this.name,
-    required this.email,
-  });
+  const UserRegistrationPage({super.key});
 
   @override
   ConsumerState<UserRegistrationPage> createState() =>
@@ -25,40 +19,75 @@ class UserRegistrationPage extends ConsumerStatefulWidget {
 class _UserRegistrationPageState extends ConsumerState<UserRegistrationPage> {
   final _formKey   = GlobalKey<FormState>();
   final _phoneCtrl = TextEditingController();
-  final _ageCtrl   = TextEditingController();
+  final _dobCtrl   = TextEditingController();
 
   bool   _agreed         = false;
   String _selectedGender = 'Male';
+  String _selectedDob    = '';
 
-  // Track which fields have been touched for real-time feedback
   bool _phoneTouched  = false;
-  bool _ageTouched    = false;
+  bool _dobTouched    = false;
   bool _agreedTouched = false;
+
+  // Loaded from SharedPreferences — no API call needed
+  late String _name;
+  late String _email;
 
   final _genders = ['Male', 'Female', 'Non-binary', 'Prefer not to say'];
 
   @override
+  void initState() {
+    super.initState();
+    // Read directly from SharedPreferences — already saved at register
+    final info = ref.read(userProfileProvider.notifier).getBasicInfo();
+    _name  = info.name;
+    _email = info.email;
+  }
+
+  @override
   void dispose() {
     _phoneCtrl.dispose();
-    _ageCtrl.dispose();
+    _dobCtrl.dispose();
     super.dispose();
   }
 
-  // ── Form is fully valid — ONLY true when ALL fields pass ─────────────────
-  bool get _isFormComplete {
-    final phoneOk = _phoneCtrl.text.trim().length >= 7 &&
-        RegExp(r'^[0-9+\-\s()]+$').hasMatch(_phoneCtrl.text.trim());
-    final age     = int.tryParse(_ageCtrl.text.trim());
-    final ageOk   = age != null && age >= 10 && age <= 100;
-    return phoneOk && ageOk && _agreed;
+  // ── DOB picker ────────────────────────────────────────────────────────────
+  Future<void> _pickDob() async {
+    final now     = DateTime.now();
+    final picked  = await showDatePicker(
+      context:     context,
+      initialDate: DateTime(now.year - 25),
+      firstDate:   DateTime(now.year - 100),
+      lastDate:    DateTime(now.year - 10),
+      helpText:    'Select Date of Birth',
+      builder: (context, child) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: const ColorScheme.light(
+            primary:   AppColors.primaryColor,
+            onPrimary: AppColors.white,
+            surface:   AppColors.white,
+          ),
+        ),
+        child: child!,
+      ),
+    );
+
+    if (picked != null) {
+      setState(() {
+        _dobTouched  = true;
+        _selectedDob = DateFormat('yyyy-MM-dd').format(picked);
+        _dobCtrl.text = DateFormat('dd/MM/yyyy').format(picked);
+      });
+    }
   }
 
-  // ── Handle provider state changes ─────────────────────────────────────────
+  // ── Handle state changes ──────────────────────────────────────────────────
   void _handleProfileState(UserProfileState? previous, UserProfileState next) {
     if (!mounted) return;
 
     if (next is UserProfileSuccess) {
-      // ✅ ONLY navigate to wellness/home after successful API save
+      // authProvider.completeProfile() already called inside provider
+      // Just navigate
       _goToWellness();
     }
 
@@ -68,38 +97,34 @@ class _UserRegistrationPageState extends ConsumerState<UserRegistrationPage> {
     }
   }
 
-  // ── Submit — all validation must pass before API call ────────────────────
+  // ── Submit ────────────────────────────────────────────────────────────────
   void _submit() {
-    // Mark all as touched to show errors
     setState(() {
       _phoneTouched  = true;
-      _ageTouched    = true;
+      _dobTouched    = true;
       _agreedTouched = true;
     });
 
-    // Form field validation (Flutter form validators)
     if (!(_formKey.currentState?.validate() ?? false)) return;
-
-    // Terms must be agreed
+    if (_selectedDob.isEmpty) {
+      _showSnack('Please select your date of birth.', isError: true);
+      return;
+    }
     if (!_agreed) {
       _showSnack('Please accept the Terms & Conditions.', isError: true);
       return;
     }
 
-    // All clear — call provider
     ref.read(userProfileProvider.notifier).submitProfile(
-      fullName: widget.name,
-      email:    widget.email,
-      phone:    _phoneCtrl.text.trim(),
-      age:      _ageCtrl.text.trim(),
-      gender:   _selectedGender,
-      agreed:   _agreed,
+      phone:  _phoneCtrl.text.trim(),
+      dob:    _selectedDob,
+      gender: _selectedGender,
+      agreed: _agreed,
     );
   }
 
-  // ── Navigation — guarded ──────────────────────────────────────────────────
+  // ── Navigation — only reachable after API success ─────────────────────────
   void _goToWellness() {
-    // Only called after UserProfileSuccess — API confirmed save
     Navigator.pushAndRemoveUntil(
       context,
       _fadeRoute(
@@ -113,7 +138,6 @@ class _UserRegistrationPageState extends ConsumerState<UserRegistrationPage> {
   }
 
   void _goToHome() {
-    // Only reachable through _goToWellness — never called directly
     Navigator.pushAndRemoveUntil(
       context,
       _fadeRoute(const MainUserLayout()),
@@ -121,7 +145,7 @@ class _UserRegistrationPageState extends ConsumerState<UserRegistrationPage> {
     );
   }
 
-  // ── Back button guard — prevent going back before completing ──────────────
+  // ── Back guard ────────────────────────────────────────────────────────────
   Future<bool> _onWillPop() async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -174,13 +198,18 @@ class _UserRegistrationPageState extends ConsumerState<UserRegistrationPage> {
   }
 
   PageRouteBuilder _fadeRoute(Widget page) => PageRouteBuilder(
-        pageBuilder: (_, __, ___) => page,
+        pageBuilder:        (_, __, ___) => page,
         transitionDuration: const Duration(milliseconds: 300),
         transitionsBuilder: (_, animation, __, child) => FadeTransition(
           opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
-          child: child,
+          child:   child,
         ),
       );
+
+  bool get _isFormComplete =>
+      _phoneCtrl.text.trim().length >= 7 &&
+      _selectedDob.isNotEmpty &&
+      _agreed;
 
   @override
   Widget build(BuildContext context) {
@@ -189,19 +218,16 @@ class _UserRegistrationPageState extends ConsumerState<UserRegistrationPage> {
     final profileState = ref.watch(userProfileProvider);
     final isLoading    = profileState is UserProfileLoading;
     final isMobile     = Responsive.isMobile(context);
-    final firstName    = widget.name.split(' ').first.isEmpty
+    final firstName    = _name.split(' ').first.isEmpty
         ? 'there'
-        : widget.name.split(' ').first;
+        : _name.split(' ').first;
 
     return PopScope(
-      // ← blocks back button, shows confirmation dialog
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
         final shouldPop = await _onWillPop();
-        if (shouldPop && context.mounted) {
-          Navigator.of(context).pop();
-        }
+        if (shouldPop && context.mounted) Navigator.of(context).pop();
       },
       child: Scaffold(
         backgroundColor: AppColors.bgColor,
@@ -211,9 +237,7 @@ class _UserRegistrationPageState extends ConsumerState<UserRegistrationPage> {
             children: [
               // ── Background gradient ──────────────────────
               Positioned(
-                top:    0,
-                left:   0,
-                right:  0,
+                top: 0, left: 0, right: 0,
                 height: 250,
                 child: Container(
                   decoration: const BoxDecoration(
@@ -226,16 +250,13 @@ class _UserRegistrationPageState extends ConsumerState<UserRegistrationPage> {
                 ),
               ),
 
-              // ── Progress indicator at top ────────────────
+              // ── Progress bar ─────────────────────────────
               Positioned(
-                top:   0,
-                left:  0,
-                right: 0,
+                top: 0, left: 0, right: 0,
                 child: SafeArea(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical:   12,
+                      horizontal: 20, vertical: 12,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
@@ -243,8 +264,8 @@ class _UserRegistrationPageState extends ConsumerState<UserRegistrationPage> {
                         Text(
                           'Step 2 of 2 — Complete Profile',
                           style: TextStyle(
-                            fontSize: 11,
-                            color:    AppColors.white.withOpacity(0.8),
+                            fontSize:   11,
+                            color:      AppColors.white.withOpacity(0.8),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -254,7 +275,7 @@ class _UserRegistrationPageState extends ConsumerState<UserRegistrationPage> {
                           child: LinearProgressIndicator(
                             value:           _isFormComplete ? 1.0 : 0.5,
                             backgroundColor: AppColors.white.withOpacity(0.3),
-                            valueColor:      const AlwaysStoppedAnimation(
+                            valueColor: const AlwaysStoppedAnimation(
                               AppColors.white,
                             ),
                             minHeight: 4,
@@ -298,43 +319,36 @@ class _UserRegistrationPageState extends ConsumerState<UserRegistrationPage> {
                         mainAxisSize:       MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // ── Header ───────────────────────
                           _buildHeader(firstName),
-                          SizedBox(
-                            height: Responsive.sectionSpacing(context),
-                          ),
+                          SizedBox(height: Responsive.sectionSpacing(context)),
 
-                          // ── Read only: Email ─────────────
+                          // ── Read-only: Email ──────────────
                           _label('Email Address'),
                           const SizedBox(height: 6),
                           _buildReadOnlyField(
-                            value: widget.email.isEmpty
-                                ? 'No email provided'
-                                : widget.email,
-                            icon: Icons.email_outlined,
+                            value: _email.isEmpty ? 'Not available' : _email,
+                            icon:  Icons.email_outlined,
                           ),
                           const SizedBox(height: 16),
 
-                          // ── Read only: Full name ──────────
+                          // ── Read-only: Full name ──────────
                           _label('Full Name'),
                           const SizedBox(height: 6),
                           _buildReadOnlyField(
-                            value: widget.name.isEmpty
-                                ? 'No name provided'
-                                : widget.name,
-                            icon: Icons.person_outline_rounded,
+                            value: _name.isEmpty ? 'Not available' : _name,
+                            icon:  Icons.person_outline_rounded,
                           ),
 
                           const SizedBox(height: 24),
                           const Divider(),
                           const SizedBox(height: 20),
 
-                          // ── Phone ────────────────────────
+                          // ── Phone ─────────────────────────
                           _label('Phone Number *'),
                           const SizedBox(height: 6),
                           _buildField(
                             controller:   _phoneCtrl,
-                            hint:         '+1 234 567 890',
+                            hint:         '+91 98765 43210',
                             icon:         Icons.phone_outlined,
                             keyboardType: TextInputType.phone,
                             inputFormatters: [
@@ -342,9 +356,8 @@ class _UserRegistrationPageState extends ConsumerState<UserRegistrationPage> {
                                 RegExp(r'[0-9+\-\s()]'),
                               ),
                             ],
-                            onChanged: (_) => setState(() {
-                              _phoneTouched = true;
-                            }),
+                            onChanged: (_) =>
+                                setState(() => _phoneTouched = true),
                             validator: (v) {
                               if (!_phoneTouched) return null;
                               if (v!.trim().isEmpty) {
@@ -362,47 +375,117 @@ class _UserRegistrationPageState extends ConsumerState<UserRegistrationPage> {
                           ),
                           const SizedBox(height: 16),
 
-                          // ── Age ──────────────────────────
-                          _label('Age *'),
+                          // ── Date of Birth ──────────────────
+                          _label('Date of Birth *'),
                           const SizedBox(height: 6),
-                          _buildField(
-                            controller:   _ageCtrl,
-                            hint:         'Enter your age',
-                            icon:         Icons.cake_outlined,
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                              LengthLimitingTextInputFormatter(3),
-                            ],
-                            onChanged: (_) => setState(() {
-                              _ageTouched = true;
-                            }),
+                          TextFormField(
+                            controller: _dobCtrl,
+                            readOnly:   true,
+                            onTap:      _pickDob,
                             validator: (v) {
-                              if (!_ageTouched) return null;
-                              if (v == null || v.trim().isEmpty) {
-                                return 'Age is required';
-                              }
-                              final age = int.tryParse(v.trim());
-                              if (age == null) return 'Enter a valid number';
-                              if (age < 10 || age > 100) {
-                                return 'Age must be between 10 and 100';
+                              if (!_dobTouched) return null;
+                              if (_selectedDob.isEmpty) {
+                                return 'Date of birth is required';
                               }
                               return null;
                             },
+                            style: const TextStyle(
+                              fontSize:   14,
+                              fontWeight: FontWeight.w500,
+                              color:      AppColors.darkText,
+                            ),
+                            decoration: InputDecoration(
+                              hintText:  'Select your date of birth',
+                              hintStyle: const TextStyle(
+                                fontSize: 13,
+                                color:    AppColors.mutedText,
+                              ),
+                              filled:    true,
+                              fillColor: AppColors.bgColor,
+                              prefixIcon: const Icon(
+                                Icons.cake_outlined,
+                                size:  18,
+                                color: AppColors.primaryColor,
+                              ),
+                              suffixIcon: const Icon(
+                                Icons.calendar_today_outlined,
+                                size:  18,
+                                color: AppColors.primaryColor,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide:   BorderSide.none,
+                              ),
+                              errorBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: AppColors.dangerRed,
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: AppColors.primaryColor,
+                                ),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 14,
+                              ),
+                            ),
                           ),
                           const SizedBox(height: 16),
 
-                          // ── Gender ───────────────────────
+                          // ── Gender ─────────────────────────
                           _label('Gender *'),
                           const SizedBox(height: 6),
-                          _buildGenderField(),
-
+                          DropdownButtonFormField<String>(
+                            value:     _selectedGender,
+                            onChanged: (v) =>
+                                setState(() => _selectedGender = v!),
+                            decoration: InputDecoration(
+                              filled:    true,
+                              fillColor: AppColors.bgColor,
+                              prefixIcon: const Icon(
+                                Icons.wc_rounded,
+                                size:  18,
+                                color: AppColors.primaryColor,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide:   BorderSide.none,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(
+                                  color: AppColors.primaryColor,
+                                ),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 14,
+                              ),
+                            ),
+                            style: const TextStyle(
+                              fontSize:   14,
+                              fontWeight: FontWeight.w500,
+                              color:      AppColors.darkText,
+                            ),
+                            dropdownColor: AppColors.white,
+                            icon: const Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              color: AppColors.mutedText,
+                            ),
+                            items: _genders
+                                .map((g) => DropdownMenuItem(
+                                      value: g,
+                                      child: Text(g),
+                                    ))
+                                .toList(),
+                          ),
                           const SizedBox(height: 24),
 
-                          // ── Terms ────────────────────────
+                          // ── Terms ──────────────────────────
                           _buildTermsCheckbox(),
 
-                          // ── Terms error hint ─────────────
                           if (_agreedTouched && !_agreed) ...[
                             const SizedBox(height: 6),
                             const Row(
@@ -424,11 +507,9 @@ class _UserRegistrationPageState extends ConsumerState<UserRegistrationPage> {
                             ),
                           ],
 
-                          SizedBox(
-                            height: Responsive.sectionSpacing(context),
-                          ),
+                          SizedBox(height: Responsive.sectionSpacing(context)),
 
-                          // ── Submit ───────────────────────
+                          // ── Submit ─────────────────────────
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
@@ -466,8 +547,6 @@ class _UserRegistrationPageState extends ConsumerState<UserRegistrationPage> {
                           ),
 
                           const SizedBox(height: 16),
-
-                          // ── Required fields note ─────────
                           const Center(
                             child: Text(
                               '* All fields are required',
@@ -518,7 +597,7 @@ class _UserRegistrationPageState extends ConsumerState<UserRegistrationPage> {
         ),
         const SizedBox(height: 8),
         const Text(
-          'You\'re almost there! Complete your profile\nto start using the app.',
+          "You're almost there! Complete your profile\nto start using the app.",
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 14,
@@ -560,21 +639,20 @@ class _UserRegistrationPageState extends ConsumerState<UserRegistrationPage> {
           borderSide:   BorderSide.none,
         ),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical:   14,
+          horizontal: 14, vertical: 14,
         ),
       ),
     );
   }
 
   Widget _buildField({
-    required TextEditingController      controller,
-    required String                     hint,
-    required IconData                   icon,
-    TextInputType                       keyboardType     = TextInputType.text,
-    List<TextInputFormatter>?           inputFormatters,
-    String? Function(String?)?          validator,
-    void Function(String)?              onChanged,
+    required TextEditingController     controller,
+    required String                    hint,
+    required IconData                  icon,
+    TextInputType                      keyboardType     = TextInputType.text,
+    List<TextInputFormatter>?          inputFormatters,
+    String? Function(String?)?         validator,
+    void Function(String)?             onChanged,
   }) {
     return TextFormField(
       controller:      controller,
@@ -589,7 +667,9 @@ class _UserRegistrationPageState extends ConsumerState<UserRegistrationPage> {
       ),
       decoration: InputDecoration(
         hintText:  hint,
-        hintStyle: const TextStyle(fontSize: 13, color: AppColors.mutedText),
+        hintStyle: const TextStyle(
+          fontSize: 13, color: AppColors.mutedText,
+        ),
         filled:    true,
         fillColor: AppColors.bgColor,
         prefixIcon: Icon(icon, size: 18, color: AppColors.primaryColor),
@@ -610,51 +690,9 @@ class _UserRegistrationPageState extends ConsumerState<UserRegistrationPage> {
           borderSide: const BorderSide(color: AppColors.dangerRed),
         ),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical:   14,
+          horizontal: 14, vertical: 14,
         ),
       ),
-    );
-  }
-
-  Widget _buildGenderField() {
-    return DropdownButtonFormField<String>(
-      value:     _selectedGender,
-      onChanged: (v) => setState(() => _selectedGender = v!),
-      decoration: InputDecoration(
-        filled:    true,
-        fillColor: AppColors.bgColor,
-        prefixIcon: const Icon(
-          Icons.wc_rounded,
-          size:  18,
-          color: AppColors.primaryColor,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide:   BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.primaryColor),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical:   14,
-        ),
-      ),
-      style: const TextStyle(
-        fontSize:   14,
-        fontWeight: FontWeight.w500,
-        color:      AppColors.darkText,
-      ),
-      dropdownColor: AppColors.white,
-      icon: const Icon(
-        Icons.keyboard_arrow_down_rounded,
-        color: AppColors.mutedText,
-      ),
-      items: _genders
-          .map((g) => DropdownMenuItem(value: g, child: Text(g)))
-          .toList(),
     );
   }
 
@@ -676,8 +714,7 @@ class _UserRegistrationPageState extends ConsumerState<UserRegistrationPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width:  24,
-            height: 24,
+            width: 24, height: 24,
             child: Checkbox(
               value:       _agreed,
               activeColor: AppColors.primaryColor,
@@ -699,7 +736,7 @@ class _UserRegistrationPageState extends ConsumerState<UserRegistrationPage> {
               }),
               child: const Text.rich(
                 TextSpan(
-                  text: 'I have read and agree to the ',
+                  text:  'I have read and agree to the ',
                   style: TextStyle(
                     fontSize: 12,
                     color:    AppColors.darkText,

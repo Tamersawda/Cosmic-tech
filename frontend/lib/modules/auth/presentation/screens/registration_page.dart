@@ -6,11 +6,11 @@ import 'package:frontend/core/utils/responsive_data.dart';
 import 'package:frontend/modules/admin/admin_layout.dart';
 import 'package:frontend/modules/auth/presentation/providers/auth_provider.dart';
 import 'package:frontend/modules/auth/presentation/screens/login_page.dart';
-import 'package:frontend/modules/auth/presentation/widgets/auth_header.dart';
-import 'package:frontend/modules/auth/presentation/widgets/auth_link_text.dart';
-import 'package:frontend/modules/auth/presentation/widgets/auth_page_card.dart';
-import 'package:frontend/modules/auth/presentation/widgets/auth_primary_button.dart';
-import 'package:frontend/modules/auth/presentation/widgets/auth_text_field.dart';
+import 'package:frontend/modules/auth/presentation/screens/widgets/auth_header.dart';
+import 'package:frontend/modules/auth/presentation/screens/widgets/auth_link_text.dart';
+import 'package:frontend/modules/auth/presentation/screens/widgets/auth_page_card.dart';
+import 'package:frontend/modules/auth/presentation/screens/widgets/auth_primary_button.dart';
+import 'package:frontend/modules/auth/presentation/screens/widgets/auth_text_field.dart';
 import 'package:frontend/modules/doctor/presentation/screens/registration/basic_information.dart';
 import 'package:frontend/modules/user/presentation/screens/registration/user_registration_page.dart';
 
@@ -23,10 +23,10 @@ class RegisterPage extends ConsumerStatefulWidget {
 }
 
 class _RegisterPageState extends ConsumerState<RegisterPage> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameCtrl = TextEditingController();
+  final _formKey   = GlobalKey<FormState>();
+  final _nameCtrl  = TextEditingController();
   final _emailCtrl = TextEditingController();
-  final _passCtrl = TextEditingController();
+  final _passCtrl  = TextEditingController();
 
   @override
   void dispose() {
@@ -36,29 +36,41 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     super.dispose();
   }
 
-  // ── Handle state changes → navigate ───────────────────────────────────────
+  // ── Handle state → navigate ───────────────────────────────────────────────
   void _handleAuthState(AuthState? previous, AuthState next) {
     if (!mounted) return;
 
-    // Register success → go to complete profile
+    // Register success → always goes to profile completion
+    // is_profile_completed is always false from backend on register
     if (next is AuthRegistered) {
-      // ← AuthRegistered not AuthNeedsProfile
-      _routeToCompleteProfile(
-        next.user.role, // ← userType not role
-        next.user.name, // ← fullName not name
-        next.user.email,
-      );
+      _routeToCompleteProfile(next.user.role);
+    }
+
+    // Should not happen on register but handle gracefully
+    if (next is AuthAuthenticated) {
+      _routeToHome(next.user.role);
     }
   }
 
-  void _routeToCompleteProfile(String role, String fullName, String email) {
+  // ── Route to correct profile completion screen ────────────────────────────
+  void _routeToCompleteProfile(String role) {
     final destination = switch (role) {
+      'doctor' => const BasicInformation(),  // 4 step onboarding
+      'admin'  => const AdminLayout(),        // admin has no profile step
+      _        => const UserRegistrationPage(), // client has 1 step
+    };
+    Navigator.pushAndRemoveUntil(
+      context,
+      _fadeRoute(destination),
+      (route) => false,
+    );
+  }
+
+  void _routeToHome(String role) {
+    final destination = switch (role) {
+      'admin'  => const AdminLayout(),
       'doctor' => const BasicInformation(),
-      'admin' => const AdminLayout(),
-      _ => UserRegistrationPage(
-        name: fullName, // ← pass fullName
-        email: email,
-      ),
+      _        => const UserRegistrationPage(),
     };
     Navigator.pushAndRemoveUntil(
       context,
@@ -70,57 +82,54 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   // ── Submit ────────────────────────────────────────────────────────────────
   void _register() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    // Clear any previous error before new attempt
     ref.read(authProvider.notifier).clearError();
-    ref
-        .read(authProvider.notifier)
-        .register(
-          name: _nameCtrl.text.trim(), // ← fullName
-          email: _emailCtrl.text.trim(),
-          password: _passCtrl.text,
-          role: widget.role.apiValue, // maps UserRole.user → 'patient'
-        );
+    ref.read(authProvider.notifier).register(
+      name: _nameCtrl.text.trim(),   // ← backend: fullName
+      email:    _emailCtrl.text.trim(),
+      password: _passCtrl.text,
+      role: widget.role.apiValue,    // ← backend: userType (client/doctor/admin)
+    );
   }
 
   void _goToLogin() =>
       Navigator.pushReplacement(context, _fadeRoute(const LoginPage()));
 
   PageRouteBuilder _fadeRoute(Widget page) => PageRouteBuilder(
-    pageBuilder: (_, __, ___) => page,
-    transitionDuration: const Duration(milliseconds: 300),
-    transitionsBuilder: (_, animation, __, child) => FadeTransition(
-      opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
-      child: child,
-    ),
-  );
+        pageBuilder:        (_, __, ___) => page,
+        transitionDuration: const Duration(milliseconds: 300),
+        transitionsBuilder: (_, animation, __, child) => FadeTransition(
+          opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+          child:   child,
+        ),
+      );
 
-  // ── Role-specific values ──────────────────────────────────────────────────
+  // ── Role display values ───────────────────────────────────────────────────
   String get _roleLabel => switch (widget.role) {
-    UserRole.doctor => 'Practitioner',
-    UserRole.admin => 'Administrator',
-    UserRole.user => 'Patient',
-  };
+        UserRole.doctor => 'Practitioner',
+        UserRole.admin  => 'Administrator',
+        UserRole.user   => 'client',
+      };
 
   Color get _roleColor => switch (widget.role) {
-    UserRole.doctor => AppColors.accentTeal,
-    UserRole.admin => AppColors.accentAmber,
-    UserRole.user => AppColors.primaryColor,
-  };
+        UserRole.doctor => AppColors.accentTeal,
+        UserRole.admin  => AppColors.accentAmber,
+        UserRole.user   => AppColors.primaryColor,
+      };
 
   IconData get _roleIcon => switch (widget.role) {
-    UserRole.doctor => Icons.spa_rounded,
-    UserRole.admin => Icons.admin_panel_settings_rounded,
-    UserRole.user => Icons.favorite_rounded,
-  };
+        UserRole.doctor => Icons.spa_rounded,
+        UserRole.admin  => Icons.admin_panel_settings_rounded,
+        UserRole.user   => Icons.favorite_rounded,
+      };
 
   @override
   Widget build(BuildContext context) {
     ref.listen<AuthState>(authProvider, _handleAuthState);
 
-    final authState = ref.watch(authProvider);
-    final isLoading = authState is AuthLoading;
+    final authState    = ref.watch(authProvider);
+    final isLoading    = authState is AuthLoading;
     final errorMessage = authState is AuthError ? authState.message : null;
-    final spacing = Responsive.sectionSpacing(context);
+    final spacing      = Responsive.sectionSpacing(context);
 
     return AuthPageCard(
       child: Form(
@@ -130,10 +139,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           children: [
             // ── Header ────────────────────────────────────
             AuthPageHeader(
-              icon: _roleIcon,
-              title: 'Create Account',
-              subtitle: 'Registering as $_roleLabel',
-              iconColor: _roleColor,
+              icon:        _roleIcon,
+              title:       'Create Account',
+              subtitle:    'Registering as $_roleLabel',
+              iconColor:   _roleColor,
               useGradient: false,
             ),
 
@@ -141,12 +150,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
             // ── Full name ─────────────────────────────────
             AuthTextField(
-              controller: _nameCtrl,
-              label: 'Full Name',
-              hint: 'Enter your complete name',
-              prefixIcon: Icons.person_outline_rounded,
+              controller:   _nameCtrl,
+              label:        'Full Name',
+              hint:         'Enter your complete name',
+              prefixIcon:   Icons.person_outline_rounded,
               keyboardType: TextInputType.name,
-              accentColor: _roleColor,
+              accentColor:  _roleColor,
               validator: (v) {
                 if (v!.trim().isEmpty) return 'Full name is required';
                 if (v.trim().length < 2) return 'Name too short';
@@ -161,15 +170,16 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
             // ── Email ─────────────────────────────────────
             AuthTextField(
-              controller: _emailCtrl,
-              label: 'Email Address',
-              hint: 'you@example.com',
-              prefixIcon: Icons.email_outlined,
+              controller:   _emailCtrl,
+              label:        'Email Address',
+              hint:         'you@example.com',
+              prefixIcon:   Icons.email_outlined,
               keyboardType: TextInputType.emailAddress,
-              accentColor: _roleColor,
+              accentColor:  _roleColor,
               validator: (v) {
                 if (v!.trim().isEmpty) return 'Email is required';
-                if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v.trim())) {
+                if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+                    .hasMatch(v.trim())) {
                   return 'Enter a valid email';
                 }
                 return null;
@@ -180,18 +190,16 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
             // ── Password ──────────────────────────────────
             AuthTextField(
-              controller: _passCtrl,
-              label: 'Password',
-              hint: 'Create a secure password',
-              prefixIcon: Icons.lock_outline_rounded,
+              controller:  _passCtrl,
+              label:       'Password',
+              hint:        'Create a secure password',
+              prefixIcon:  Icons.lock_outline_rounded,
               obscureText: true,
-              showToggle: true,
+              showToggle:  true,
               accentColor: _roleColor,
               validator: (v) {
                 if (v!.isEmpty) return 'Password is required';
-                if (v.length < 8) {
-                  return 'Minimum 8 characters';
-                }
+                if (v.length < 8) return 'Minimum 8 characters';
                 if (!RegExp(r'[A-Z]').hasMatch(v)) {
                   return 'Must contain at least one uppercase letter';
                 }
@@ -215,19 +223,19 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
             // ── Register button ───────────────────────────
             AuthPrimaryButton(
-              label: 'Register Now',
-              onTap: isLoading ? null : _register,
+              label:     'Register Now',
+              onTap:     isLoading ? null : _register,
               isLoading: isLoading,
-              color: _roleColor,
+              color:     _roleColor,
             ),
 
             const SizedBox(height: 22),
 
             // ── Login link ────────────────────────────────
             AuthLinkText(
-              prefix: 'Already have an account? ',
-              linkText: 'Log In',
-              onTap: _goToLogin,
+              prefix:    'Already have an account? ',
+              linkText:  'Log In',
+              onTap:     _goToLogin,
               linkColor: _roleColor,
             ),
 
@@ -244,24 +252,26 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 // ── Error banner ──────────────────────────────────────────────────────────────
 class _ErrorBanner extends StatelessWidget {
   final String message;
-  final Color color;
+  final Color  color;
   const _ErrorBanner({required this.message, required this.color});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
+      width:   double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.dangerRed.withOpacity(0.08),
+        color:        AppColors.dangerRed.withOpacity(0.08),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.dangerRed.withOpacity(0.25)),
+        border: Border.all(
+          color: AppColors.dangerRed.withOpacity(0.25),
+        ),
       ),
       child: Row(
         children: [
           const Icon(
             Icons.error_outline_rounded,
-            size: 15,
+            size:  15,
             color: AppColors.dangerRed,
           ),
           const SizedBox(width: 8),
@@ -269,8 +279,8 @@ class _ErrorBanner extends StatelessWidget {
             child: Text(
               message,
               style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.dangerRed,
+                fontSize:   12,
+                color:      AppColors.dangerRed,
                 fontWeight: FontWeight.w500,
               ),
             ),

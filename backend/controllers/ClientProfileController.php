@@ -7,13 +7,15 @@ use Backend\Utils\Response;
 use Backend\Utils\Validator;
 use Backend\Middleware\AuthMiddleware;
 
-class ClientProfileController {
+class ClientProfileController
+{
     private ClientProfile $profileModel;
     private Validator $validator;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->profileModel = new ClientProfile();
-        $this->validator    = new Validator();
+        $this->validator = new Validator();
     }
 
     /**
@@ -29,10 +31,11 @@ class ClientProfileController {
      *
      * Role required: 'client'
      */
-    public function setup(object $payload): void {
+    public function setup(object $payload): void
+    {
         AuthMiddleware::requireRole($payload, 'client');
 
-        $input  = $this->getInputData();
+        $input = $this->getInputData();
         $userId = $payload->userId ?? $payload->user_id;
 
         // Load current user state from DB (never hardcode).
@@ -45,7 +48,7 @@ class ClientProfileController {
         }
 
         // --- Fix 2: Migration safety check in setup API (Hard Stop) ---
-        $isCompleted = (bool)($user['is_profile_completed'] ?? false);
+        $isCompleted = (bool) ($user['is_profile_completed'] ?? false);
         if ($isCompleted) {
             $profile = $this->profileModel->findByUserId($userId);
             // Critical fields for migration check: first_name and phone_number
@@ -54,14 +57,14 @@ class ClientProfileController {
                 $db = \Backend\Config\Database::getInstance();
                 $resetStmt = $db->prepare('UPDATE users SET is_profile_completed = 0, onboarding_step = 1 WHERE id = ?');
                 $resetStmt->execute([$userId]);
-                
+
                 // Fix 2: HARD STOP - return error and do not continue
                 Response::error('Profile reset due to invalid data. Restart onboarding.', 400);
                 return;
             }
         }
 
-        $currentStep = (int)($user['onboarding_step'] ?? 0);
+        $currentStep = (int) ($user['onboarding_step'] ?? 0);
 
         // Reject if profile is already complete.
         if ($isCompleted) {
@@ -75,7 +78,7 @@ class ClientProfileController {
             return;
         }
 
-        $incomingStep = (int)$input['step'];
+        $incomingStep = (int) $input['step'];
 
         // Reject out-of-range steps.
         if ($incomingStep < 1 || $incomingStep > 3) {
@@ -85,7 +88,7 @@ class ClientProfileController {
 
         // --- Fix 4 & 5: Strict step-field mapping & No extra fields ---
         $stepAllowedFields = [
-            1 => ['firstName', 'lastName', 'gender', 'dateOfBirth', 'phoneNumber'],
+            1 => ['name', 'gender', 'dateOfBirth', 'phoneNumber'],
             2 => ['medicalHistory', 'allergies', 'currentMedications'],
             3 => ['emergencyContact']
         ];
@@ -114,11 +117,13 @@ class ClientProfileController {
 
             // Fix 3: Strict nested validation for Step 3
             if ($incomingStep === 3 && $field === 'emergencyContact') {
-                if (!is_array($value) || 
-                    !isset($value['name']) || 
-                    !isset($value['phoneNumber']) || 
-                    $value['name'] === '' || 
-                    $value['phoneNumber'] === '') {
+                if (
+                    !is_array($value) ||
+                    !isset($value['name']) ||
+                    !isset($value['phoneNumber']) ||
+                    $value['name'] === '' ||
+                    $value['phoneNumber'] === ''
+                ) {
                     Response::error('Invalid emergencyContact structure', 400);
                     return;
                 }
@@ -139,7 +144,7 @@ class ClientProfileController {
             $this->profileModel->saveStepAndState($userId, $input, $incomingStep, $isProfileCompleted);
 
             Response::success([
-                'onboarding_step'      => $incomingStep,
+                'onboarding_step' => $incomingStep,
                 'is_profile_completed' => $isProfileCompleted,
             ], 200);
 
@@ -158,7 +163,8 @@ class ClientProfileController {
      *
      * Role required: 'client'
      */
-    public function getAppointments(object $payload): void {
+    public function getAppointments(object $payload): void
+    {
         AuthMiddleware::requireRole($payload, 'client');
 
         $userId = $payload->userId ?? $payload->user_id;
@@ -169,7 +175,7 @@ class ClientProfileController {
 
             Response::success([
                 'appointments' => $appointments,
-                'count'        => count($appointments),
+                'count' => count($appointments),
             ], 200);
 
         } catch (\Exception $e) {
@@ -184,11 +190,12 @@ class ClientProfileController {
      *
      * Role required: 'client'
      */
-    public function getProfile(object $payload): void {
+    public function getProfile(object $payload): void
+    {
         AuthMiddleware::requireRole($payload, 'client');
 
         try {
-            $userId  = $payload->userId ?? $payload->user_id;
+            $userId = $payload->userId ?? $payload->user_id;
             $client = $this->profileModel->findByUserId($userId);
 
             if (!$client) {
@@ -207,8 +214,9 @@ class ClientProfileController {
     /**
      * Parse JSON request body. Falls back to $_POST for form data.
      */
-    private function getInputData(): array {
-        $raw  = file_get_contents('php://input');
+    private function getInputData(): array
+    {
+        $raw = file_get_contents('php://input');
         $json = json_decode($raw, true) ?? [];
         return array_merge($_POST, $json);
     }

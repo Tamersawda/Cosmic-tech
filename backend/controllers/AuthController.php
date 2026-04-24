@@ -212,13 +212,13 @@ class AuthController {
             if ($role === 'client' && (bool)$user['is_profile_completed']) {
                 $db = \Backend\Config\Database::getInstance();
                 $chkStmt = $db->prepare(
-                    'SELECT first_name, phone_number FROM client_profiles WHERE user_id = ? LIMIT 1'
+                    'SELECT full_name, phone_number FROM client_profiles WHERE user_id = ? LIMIT 1'
                 );
                 $chkStmt->execute([$user['id']]);
                 $profile = $chkStmt->fetch(\PDO::FETCH_ASSOC);
 
                 $criticalMissing = !$profile
-                    || empty($profile['first_name'])
+                    || empty($profile['full_name'])
                     || empty($profile['phone_number']);
 
                 if ($criticalMissing) {

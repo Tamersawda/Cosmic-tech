@@ -1,9 +1,9 @@
 import 'package:frontend/modules/auth/presentation/screens/login_page.dart';
-import 'package:frontend/modules/auth/presentation/widgets/auth_header.dart';
-import 'package:frontend/modules/auth/presentation/widgets/auth_link_text.dart';
-import 'package:frontend/modules/auth/presentation/widgets/auth_page_card.dart';
-import 'package:frontend/modules/auth/presentation/widgets/auth_primary_button.dart';
-import 'package:frontend/modules/auth/presentation/widgets/auth_text_field.dart';
+import 'package:frontend/modules/auth/presentation/screens/widgets/auth_header.dart';
+import 'package:frontend/modules/auth/presentation/screens/widgets/auth_link_text.dart';
+import 'package:frontend/modules/auth/presentation/screens/widgets/auth_page_card.dart';
+import 'package:frontend/modules/auth/presentation/screens/widgets/auth_primary_button.dart';
+import 'package:frontend/modules/auth/presentation/screens/widgets/auth_text_field.dart';
 import 'package:flutter/material.dart';
 
 class ForgotPasswordPage extends StatefulWidget {

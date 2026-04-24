@@ -1,4 +1,4 @@
-import 'package:frontend/modules/auth/presentation/widgets/auth_form_label.dart';
+import 'package:frontend/modules/auth/presentation/screens/widgets/auth_form_label.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/core/utils/colors.dart';
 
