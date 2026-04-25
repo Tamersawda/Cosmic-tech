@@ -13,7 +13,7 @@ class AppointmentController {
     private Appointment   $appointmentModel;
     private DoctorProfile $doctorModel;
     private ClientProfile $clientModel;
-    private Validator     $validator;
+    private Validator $validator;
 
     public function __construct() {
         $this->appointmentModel = new Appointment();
@@ -87,8 +87,9 @@ class AppointmentController {
             }
 
             // Doctor must exist
-            if (!$this->doctorModel->exists($doctorId)) {
-                Response::error('Doctor not found', 404);
+            $doctor = $this->doctorModel->findByUserId($doctorId);
+            if (!$doctor || !$doctor['is_active']) {
+                Response::error('Doctor not found or inactive', 400);
                 return;
             }
 

@@ -25,6 +25,20 @@ return function(string $method, string $path) {
     
     if (empty($normalizedPath)) $normalizedPath = '/';
 
+    if ($method === 'PATCH') {
+        if ($normalizedPath === '/status') {
+            $payload = AuthMiddleware::authenticate();
+            if ($payload === null) {
+                Response::error('Unauthorized', 401);
+                return;
+            }
+            // convert payload object to array for controller
+            $user = (array)$payload;
+            $controller->updateStatus($user);
+            return;
+        }
+    }
+
     if ($method === 'POST') {
         if ($normalizedPath === '/setup') {
             $payload = AuthMiddleware::authenticate();

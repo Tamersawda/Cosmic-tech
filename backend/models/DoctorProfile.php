@@ -71,6 +71,53 @@ class DoctorProfile {
      * Update the doctor profile with the data supplied via /api/doctors/setup.
      * All column names match the combined_schema.sql exactly.
      */
+    /**
+     * Create a new doctor profile.
+     */
+    public function create(array $data): bool {
+        $stmt = $this->db->prepare('
+            INSERT INTO doctor_profiles (
+                user_id, gender, date_of_birth, phone_number, profile_photo_url,
+                primary_specialty, sub_specializations, years_of_experience,
+                license_number, medical_council, languages_spoken,
+                video_enabled, video_rate, audio_enabled, audio_rate,
+                consultation_duration, buffer_time, is_active, street_address,
+                city, state, country, postal_code, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP())
+        ');
+
+        try {
+            return $stmt->execute([
+                $data['user_id'],
+                $data['gender'] ?? 'other',
+                $data['date_of_birth'] ?? null,
+                $data['phone_number'] ?? null,
+                $data['profile_photo_url'] ?? null,
+                $data['primary_specialty'] ?? null,
+                $data['sub_specializations'] ?? '[]',
+                $data['years_of_experience'] ?? 0,
+                $data['license_number'] ?? null,
+                $data['medical_council'] ?? null,
+                $data['languages_spoken'] ?? '[]',
+                $data['video_enabled'] ?? 1,
+                $data['video_rate'] ?? null,
+                $data['audio_enabled'] ?? 1,
+                $data['audio_rate'] ?? null,
+                $data['consultation_duration'] ?? '60min',
+                $data['buffer_time'] ?? '10min',
+                $data['is_active'] ?? 1,
+                $data['street_address'] ?? null,
+                $data['city'] ?? null,
+                $data['state'] ?? null,
+                $data['country'] ?? null,
+                $data['postal_code'] ?? null
+            ]);
+        } catch (\Exception $e) {
+            error_log('Doctor profile create error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     public function setupProfile(string $userId, array $data): bool {
         $stmt = $this->db->prepare('
             UPDATE doctor_profiles
@@ -78,7 +125,7 @@ class DoctorProfile {
                 gender                = ?,
                 date_of_birth         = ?,
                 phone_number          = ?,
-                profile_photo         = ?,
+                profile_photo_url     = ?,
                 primary_specialty     = ?,
                 sub_specializations   = ?,
                 years_of_experience   = ?,
@@ -102,7 +149,7 @@ class DoctorProfile {
                 $data['gender']              ?? 'other',
                 $data['dateOfBirth']         ?? null,
                 $data['phoneNumber']         ?? null,
-                $data['profilePhoto']        ?? null,
+                $data['profilePhotoUrl']     ?? null,
                 $data['primarySpecialty']    ?? null,
                 json_encode($data['subSpecializations'] ?? []),
                 $data['yearsOfExperience']   ?? 0,
@@ -268,10 +315,14 @@ class DoctorProfile {
                     dp.video_rate,
                     dp.consultation_duration,
                     dp.is_verified,
+                    dp.is_active,
+                    dp.profile_photo_url,
                     u.email,
                     u.user_type
                 FROM doctor_profiles dp
                 JOIN users u ON dp.user_id = u.id
+                WHERE u.is_active = 1
+                AND dp.is_active = 1
                 ORDER BY u.full_name ASC
             ');
             $stmt->execute();
@@ -298,5 +349,16 @@ class DoctorProfile {
         $data[6] = chr(ord($data[6]) & 0x0f | 0x40);
         $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
         return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+    }
+    /**
+     * Update doctor availability status.
+     */
+    public function updateActiveStatus(string $userId, int $isActive): bool {
+        $stmt = $this->db->prepare('
+            UPDATE doctor_profiles
+            SET is_active = ?, updated_at = UTC_TIMESTAMP()
+            WHERE user_id = ?
+        ');
+        return $stmt->execute([$isActive, $userId]);
     }
 }

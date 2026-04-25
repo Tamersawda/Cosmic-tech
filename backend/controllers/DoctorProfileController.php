@@ -17,12 +17,73 @@ class DoctorProfileController
 
     public function setup($user)
     {
-        $input = json_decode(file_get_contents("php://input"), true);
+        // Use $_POST for multipart/form-data
+        $input = $_POST;
 
-        if (!$input) {
-            Response::error("Invalid JSON input", 400);
+        // ✅ Normalize input (since multipart/form-data sends everything as string)
+        foreach (['videoEnabled', 'audioEnabled'] as $boolField) {
+            if (isset($input[$boolField])) {
+                $val = strtolower((string)$input[$boolField]);
+                $input[$boolField] = ($val === 'true' || $val === '1');
+            }
+        }
+
+        foreach (['languagesSpoken', 'subSpecializations'] as $arrayField) {
+            if (isset($input[$arrayField]) && is_string($input[$arrayField])) {
+                $decoded = json_decode($input[$arrayField], true);
+                if (is_array($decoded)) {
+                    $input[$arrayField] = $decoded;
+                }
+            }
+        }
+
+        // ✅ File Validation (profilePhoto)
+        if (!isset($_FILES['profilePhoto']) || $_FILES['profilePhoto']['error'] !== UPLOAD_ERR_OK) {
+            Response::error("Profile photo is required and must be valid", 400);
             return;
         }
+
+        $file = $_FILES['profilePhoto'];
+        
+        // Harden MIME type validation
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mimeType = $finfo->file($file['tmp_name']);
+        $allowedTypes = ['image/jpeg', 'image/png'];
+        
+        if (!in_array($mimeType, $allowedTypes)) {
+            Response::error("Invalid file type. Only JPG, JPEG, and PNG are allowed.", 400);
+            return;
+        }
+
+        if ($file['size'] > 2 * 1024 * 1024) {
+            Response::error("File size exceeds 2MB limit.", 400);
+            return;
+        }
+
+        // 🔐 Use authenticated user_id
+        $userId = $user['id'];
+
+        // Prepare storage path - ensure it's absolute and safe
+        $uploadDir = dirname(__DIR__, 1) . '/public/uploads/doctors/';
+        if (!is_dir($uploadDir)) {
+            if (!mkdir($uploadDir, 0755, true)) {
+                Response::error("Server storage error", 500);
+                return;
+            }
+        }
+
+        // Sanitized filename (completely server-controlled)
+        $filename = "doctor_" . preg_replace('/[^a-zA-Z0-9_\-]/', '', $userId) . ".jpg";
+        $targetPath = $uploadDir . $filename;
+
+        // move_uploaded_file safely overwrites existing files for the same user, preventing orphans
+        if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
+            Response::error("Failed to save profile photo", 500);
+            return;
+        }
+
+        // Stored path matches the public accessibility pattern
+        $profilePhotoUrl = "uploads/doctors/" . $filename;
 
         // 🔥 Block forbidden fields
         $forbidden = ['fullName', 'firstName', 'lastName', 'age', 'medicalHistory'];
@@ -61,70 +122,144 @@ class DoctorProfileController
             return;
         }
 
-        // 🔐 Use authenticated user_id
-        $userId = $user['id'];
-
-        // ❗ Prevent duplicate setup
-        if ($this->doctorModel->existsByUserId($userId)) {
-            Response::error("Doctor profile already exists", 409);
-            return;
-        }
-
-        // 📦 Prepare data
+        // ✅ 📦 Prepare data
         $data = [
             'user_id'              => $userId,
             'gender'               => $input['gender'],
-            'date_of_birth'        => $input['dateOfBirth'],
-            'phone_number'         => $input['phoneNumber'],
-            'primary_specialty'    => $input['primarySpecialty'],
-            'sub_specializations'  => isset($input['subSpecializations']) 
-                                        ? json_encode($input['subSpecializations']) 
-                                        : json_encode([]),
-            'years_of_experience'  => $input['yearsOfExperience'],
-            'license_number'       => $input['licenseNumber'],
-            'medical_council'      => $input['medicalCouncil'] ?? null,
-            'languages_spoken'     => json_encode($input['languagesSpoken']),
-            'video_enabled'        => $input['videoEnabled'],
-            'video_rate'           => $input['videoRate'],
-            'audio_enabled'        => $input['audioEnabled'] ?? false,
-            'audio_rate'           => $input['audioRate'] ?? null,
-            'consultation_duration'=> $input['consultationDuration'],
-            'buffer_time'          => $input['bufferTime'],
-            'street_address'       => $input['streetAddress'] ?? null,
+            'dateOfBirth'          => $input['dateOfBirth'],
+            'phoneNumber'          => $input['phoneNumber'],
+            'profilePhotoUrl'      => $profilePhotoUrl, // Fixed mapping for setupProfile
+            'primarySpecialty'     => $input['primarySpecialty'],
+            'subSpecializations'   => $input['subSpecializations'] ?? [],
+            'yearsOfExperience'    => $input['yearsOfExperience'],
+            'licenseNumber'        => $input['licenseNumber'],
+            'languagesSpoken'      => $input['languagesSpoken'],
+            'videoEnabled'         => $input['videoEnabled'],
+            'videoRate'            => $input['videoRate'],
+            'audioEnabled'         => $input['audioEnabled'] ?? false,
+            'audioRate'            => $input['audioRate'] ?? null,
+            'consultationDuration' => $input['consultationDuration'],
+            'bufferTime'           => $input['bufferTime'],
+            'streetAddress'        => $input['streetAddress'] ?? null,
             'city'                 => $input['city'] ?? null,
             'state'                => $input['state'] ?? null,
             'country'              => $input['country'] ?? null,
-            'postal_code'          => $input['postalCode'] ?? null
+            'postalCode'           => $input['postalCode'] ?? null
         ];
 
-        // 💾 Save
-        $created = $this->doctorModel->create($data);
+        // ❗ Upsert logic: Update if exists, Create if not (though registration should have created it)
+        if ($this->doctorModel->exists($userId)) {
+            $success = $this->doctorModel->setupProfile($userId, $data);
+        } else {
+            // Map keys back for create method (snake_case)
+            $createData = [
+                'user_id'             => $userId,
+                'gender'              => $data['gender'],
+                'date_of_birth'       => $data['dateOfBirth'],
+                'phone_number'        => $data['phoneNumber'],
+                'profile_photo_url'   => $profilePhotoUrl,
+                'primary_specialty'   => $data['primarySpecialty'],
+                'sub_specializations' => json_encode($data['subSpecializations']),
+                'years_of_experience' => $data['yearsOfExperience'],
+                'license_number'      => $data['licenseNumber'],
+                'languages_spoken'    => json_encode($data['languagesSpoken']),
+                'video_enabled'       => $data['videoEnabled'],
+                'video_rate'          => $data['videoRate'],
+                'audio_enabled'       => $data['audioEnabled'],
+                'audio_rate'          => $data['audioRate'],
+                'consultation_duration'=> $data['consultationDuration'],
+                'buffer_time'         => $data['bufferTime'],
+                'street_address'      => $data['streetAddress'],
+                'city'                => $data['city'],
+                'state'               => $data['state'],
+                'country'             => $data['country'],
+                'postal_code'         => $data['postalCode']
+            ];
+            $success = $this->doctorModel->create($createData);
+        }
 
-        if (!$created) {
-            Response::error("Failed to create doctor profile", 500);
+        if (!$success) {
+            Response::error("Failed to save doctor profile", 500);
             return;
         }
 
-        Response::success("Doctor profile created successfully");
+        Response::success([
+            'message' => "Doctor profile created successfully",
+            'profile_photo_url' => $profilePhotoUrl
+        ], 201);
     }
 
-    public function getProfile($user)
+    public function getByUserId($user)
     {
-        $userId = $user['id'];
+        $userId = $user->id ?? $user->userId ?? $user['id'] ?? null;
 
-        $profile = $this->doctorModel->getByUserId($userId);
+        if (!$userId) {
+            Response::error("User ID not found in payload", 400);
+            return;
+        }
+
+        $profile = $this->doctorModel->findByUserId($userId);
 
         if (!$profile) {
             Response::error("Doctor profile not found", 404);
             return;
         }
 
-        // Decode JSON fields
-        $profile['languagesSpoken'] = json_decode($profile['languages_spoken'], true);
-        $profile['subSpecializations'] = json_decode($profile['sub_specializations'], true);
+        // ✅ Default Image handling
+        if (empty($profile['profile_photo_url'])) {
+            $profile['profilePhotoUrl'] = "uploads/doctors/default-doctor.png";
+        } else {
+            $profile['profilePhotoUrl'] = $profile['profile_photo_url'];
+        }
 
-        unset($profile['languages_spoken'], $profile['sub_specializations']);
+        // Decode JSON fields
+        $profile['languagesSpoken'] = is_string($profile['languages_spoken']) ? json_decode($profile['languages_spoken'], true) : [];
+        $profile['subSpecializations'] = is_string($profile['sub_specializations']) ? json_decode($profile['sub_specializations'], true) : [];
+
+        // Map internal snake_case to camelCase for API
+        $profile['primarySpecialty'] = $profile['primary_specialty'];
+        $profile['yearsOfExperience'] = $profile['years_of_experience'];
+        $profile['isActive'] = (bool)$profile['is_active'];
+
+        unset($profile['languages_spoken'], $profile['sub_specializations'], $profile['profile_photo_url'], $profile['is_active']);
 
         Response::success($profile);
+    }
+
+    public function updateStatus($user)
+    {
+        if ($user['role'] !== 'doctor') {
+            Response::error("Only doctors can update their availability status", 403);
+            return;
+        }
+
+        $input = json_decode(file_get_contents("php://input"), true);
+        
+        // Strict boolean check
+        if (!isset($input['isActive']) || !is_bool($input['isActive'])) {
+            Response::error("isActive field (boolean) is required", 400);
+            return;
+        }
+
+        $isActive = $input['isActive'] ? 1 : 0;
+        $userId = $user['id'];
+
+        // Verify profile exists before update
+        if (!$this->doctorModel->exists($userId)) {
+            Response::error("Doctor profile not found", 404);
+            return;
+        }
+
+        $updated = $this->doctorModel->updateActiveStatus($userId, $isActive);
+
+        if (!$updated) {
+            Response::error("Failed to update status", 500);
+            return;
+        }
+
+        Response::success([
+            'message' => "Status updated successfully",
+            'isActive' => (bool)$isActive
+        ]);
     }
 }

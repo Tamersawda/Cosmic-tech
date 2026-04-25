@@ -172,9 +172,9 @@ class User {
                 user_id, gender, primary_specialty,
                 license_number, medical_council, languages_spoken,
                 video_enabled, audio_enabled, consultation_duration,
-                buffer_time, instant_booking_enabled, years_of_experience,
+                buffer_time, is_active, instant_booking_enabled, years_of_experience,
                 onboarding_current_step, onboarding_percentage, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, 1, 1, ?, ?, 0, 0, 1, 0, UTC_TIMESTAMP(), UTC_TIMESTAMP())
+            ) VALUES (?, ?, ?, ?, ?, ?, 1, 1, ?, ?, 1, 0, 0, 1, 0, UTC_TIMESTAMP(), UTC_TIMESTAMP())
         ');
 
         $stmt->execute([
