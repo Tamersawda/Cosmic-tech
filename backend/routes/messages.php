@@ -1,57 +1,68 @@
 <?php
 
 use Backend\Controllers\MessageController;
+use Backend\Middleware\AuthMiddleware;
+use Backend\Utils\Response;
 
 /**
  * Message Routes
+ *
+ * GET    /api/messages/inbox                   - Get inbox
+ * GET    /api/messages/sent                    - Get sent messages
+ * POST   /api/messages                         - Send standalone message
+ * POST   /api/appointments/{id}/messages       - Send appointment message
+ * GET    /api/appointments/{id}/messages        - Get appointment messages
+ * GET    /api/messages/{id}                     - Get message by ID
+ * PUT    /api/messages/{id}                     - Update message (mark read)
+ * DELETE /api/messages/{id}                     - Delete message
  */
 return function(string $method, string $path) {
     $controller = new MessageController();
 
-    // /api/messages/inbox
+    // ── GET /api/messages/inbox ──
     if ($method === 'GET' && $path === '/api/messages/inbox') {
-        $controller->getInbox((object)[]);
+        $payload = AuthMiddleware::authenticate();
+        $controller->getInbox($payload);
         return;
     }
 
-    // /api/messages/sent
+    // ── GET /api/messages/sent ──
     if ($method === 'GET' && $path === '/api/messages/sent') {
-        $controller->getSent((object)[]);
+        $payload = AuthMiddleware::authenticate();
+        $controller->getSent($payload);
         return;
     }
 
-    // /api/messages (send)
+    // ── POST /api/messages (standalone send) ──
     if ($method === 'POST' && $path === '/api/messages') {
-        $controller->sendMessage((object)[]);
+        $payload = AuthMiddleware::authenticate();
+        $controller->sendMessage($payload);
         return;
     }
 
-    // /api/appointments/{id}/messages (send/get)
+    // ── POST/GET /api/appointments/{id}/messages ──
     if (preg_match('#^/api/appointments/([^/]+)/messages$#', $path, $matches)) {
+        $payload = AuthMiddleware::authenticate();
         if ($method === 'POST') {
-            $controller->send((object)[], $matches[1]);
+            $controller->send($payload, $matches[1]);
         } else {
-            $controller->getAppointmentMessages((object)[], $matches[1]);
+            $controller->getAppointmentMessages($payload, $matches[1]);
         }
         return;
     }
 
-    // /api/messages/{id} (get/update/delete)
+    // ── GET/PUT/DELETE /api/messages/{id} ──
     if (preg_match('#^/api/messages/([^/]+)$#', $path, $matches)) {
+        $payload = AuthMiddleware::authenticate();
         if ($method === 'GET') {
-            $controller->get((object)[], $matches[1]);
+            $controller->get($payload, $matches[1]);
         } elseif ($method === 'PUT') {
-            $controller->update((object)[], $matches[1]);
+            $controller->update($payload, $matches[1]);
         } elseif ($method === 'DELETE') {
-            $controller->delete((object)[], $matches[1]);
+            $controller->delete($payload, $matches[1]);
         }
         return;
     }
 
-    // Default 404 for this route group
-    http_response_code(404);
-    echo json_encode([
-        'success' => false,
-        'message' => 'Message route not found'
-    ]);
+    Response::error('Route not found in Messages: ' . $method . ' ' . $path, 404);
 };

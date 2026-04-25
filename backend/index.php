@@ -86,6 +86,17 @@ if ($path[0] !== '/') $path = '/' . $path;
 
 // -----------------------------
 // Routing (STRICT MATCHING)
+// ORDER MATTERS:
+//   1. /api/auth
+//   2. /api/clients
+//   3. /api/doctors
+//   4. /api/admin
+//   5. /api/available-slots       ← NEW
+//   6. /api/consultations
+//   7. /api/appointments/{id}/messages  ← must come BEFORE /api/appointments
+//   8. /api/appointments           ← NEW (also handles /api/appointments/available-slots)
+//   9. /api/messages
+//  10. fallback
 // -----------------------------
 try {
 
@@ -105,11 +116,27 @@ try {
         $router = require __DIR__ . '/routes/admin.php';
         $router($method, $path);
 
+    } elseif (strpos($path, '/api/available-slots') === 0 || strpos($path, '/available-slots') === 0) {
+        // Available Slots — standalone CRUD endpoints
+        $router = require __DIR__ . '/routes/slots.php';
+        $router($method, $path);
+
     } elseif (strpos($path, '/api/consultations') === 0 || strpos($path, '/consultations') === 0) {
         $router = require __DIR__ . '/routes/consultations.php';
         $router($method, $path);
 
+    } elseif (preg_match('#^/api/appointments/[^/]+/messages#', $path)) {
+        // Appointment-scoped messages — MUST match before generic /api/appointments
+        $router = require __DIR__ . '/routes/messages.php';
+        $router($method, $path);
+
+    } elseif (strpos($path, '/api/appointments') === 0 || strpos($path, '/appointments') === 0) {
+        // Appointments — booking, CRUD, list, and also /api/appointments/available-slots
+        $router = require __DIR__ . '/routes/appointments.php';
+        $router($method, $path);
+
     } elseif (strpos($path, '/api/messages') === 0 || strpos($path, '/messages') === 0) {
+        // Standalone messages — inbox, sent, CRUD
         $router = require __DIR__ . '/routes/messages.php';
         $router($method, $path);
 
