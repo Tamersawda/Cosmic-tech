@@ -7,8 +7,8 @@ import 'package:frontend/modules/auth/data/models/user_model.dart';
 
 class AuthRepository {
   AuthRepository({AuthApi? authApi, SharedPrefService? prefs})
-    : _api = authApi ?? AuthApi(),
-      _prefs = prefs ?? SharedPrefService.instance;
+      : _api   = authApi ?? AuthApi(),
+        _prefs = prefs   ?? SharedPrefService.instance;
 
   final AuthApi _api;
   final SharedPrefService _prefs;
@@ -62,29 +62,30 @@ class AuthRepository {
     required String role,
   }) async {
     final error = _validateRegisterFields(
-      name: name,
-      email: email,
+      name:     name,
+      email:    email,
       password: password,
     );
     if (error != null) throw ServerException(error, statusCode: 0);
 
     final user = await _api.register(
-      name: name.trim(),
-      email: email.trim().toLowerCase(),
+      name:     name.trim(),
+      email:    email.trim().toLowerCase(),
       password: password,
-      role: role,
+      role:     role,
     );
 
-    // is_profile_completed comes from backend — always false on register
+    // Save all fields from backend response
+    // is_profile_completed always false on register
     await _prefs.saveUser(
-      userId: user.userId,
-      role: user.role,
-      token: user.token,
-      refreshToken: user.refreshToken,
-      name: user.name,
-      email: user.email,
+      userId:            user.userId,
+      role:              user.role,
+      token:             user.token,
+      refreshToken:      user.refreshToken,
+      name:              user.name,
+      email:             user.email,
       isProfileComplete: user.isProfileComplete, // false from backend
-      onboardingStep: user.onboardingStep, // 0 from backend
+      onboardingStep:    user.onboardingStep,    // 0 from backend
     );
 
     return user;
@@ -99,91 +100,96 @@ class AuthRepository {
     if (error != null) throw ServerException(error, statusCode: 0);
 
     final user = await _api.login(
-      email: email.trim().toLowerCase(),
+      email:    email.trim().toLowerCase(),
       password: password,
     );
 
-    // Check profile status from backend response first
-    // then cross-check with GET profile endpoint for accuracy
+    // Use is_profile_completed from backend response first
     bool isComplete = user.isProfileComplete;
-    int step = user.onboardingStep;
+    int  step       = user.onboardingStep;
 
     // If backend says not complete, double-check via GET endpoint
     // This handles new device / cleared data scenarios
     if (!isComplete) {
       final profileCheck = await _checkProfileFromApi();
       isComplete = profileCheck.$1;
-      step = profileCheck.$2;
+      step       = profileCheck.$2;
     }
 
     await _prefs.saveUser(
-      userId: user.userId,
-      role: user.role,
-      token: user.token,
-      refreshToken: user.refreshToken,
-      name: user.name,
-      email: user.email,
+      userId:            user.userId,
+      role:              user.role,
+      token:             user.token,
+      refreshToken:      user.refreshToken,
+      name:              user.name,
+      email:             user.email,
       isProfileComplete: isComplete,
-      onboardingStep: step,
+      onboardingStep:    step,
     );
 
-    return user.copyWith(isProfileComplete: isComplete, onboardingStep: step);
+    return user.copyWith(
+      isProfileComplete: isComplete,
+      onboardingStep:    step,
+    );
   }
 
-  // ─── Check profile via GET endpoint ──────────────────────────────────────
+  // ─── Check profile via GET endpoint ───────────────────────────────────────
   // Returns (isComplete, onboardingStep)
+  // Used on login to handle new device / cleared data scenarios
   Future<(bool, int)> _checkProfileFromApi() async {
     try {
-      final dio = DioClient.instance.client;
+      final dio      = DioClient.instance.client;
       final response = await dio.get(ApiConstansts.userCompleteProfile);
-      final data = response.data is Map && response.data['data'] is Map
+      final data     = response.data is Map &&
+              response.data['data'] is Map
           ? response.data['data'] as Map<String, dynamic>
           : response.data as Map<String, dynamic>;
 
       final isComplete = data['is_profile_completed'] as bool? ?? false;
-      final step = data['onboarding_step'] as int? ?? 0;
+      final step       = data['onboarding_step']      as int?  ?? 0;
       return (isComplete, step);
     } catch (_) {
-      // Fallback to SharedPrefs if API fails
+      // Fallback to SharedPrefs if API call fails
       return (_prefs.isProfileComplete(), _prefs.getOnboardingStep());
     }
   }
 
   // ─── Restore session ──────────────────────────────────────────────────────
   UserModel? tryRestoreSession() {
-    final token = _prefs.getToken();
-    final role = _prefs.getRole();
-    final name = _prefs.getName();
-    final email = _prefs.getEmail();
-    final userId = _prefs.getUserId();
+    final token        = _prefs.getToken();
+    final role         = _prefs.getRole();
+    final name         = _prefs.getName();
+    final email        = _prefs.getEmail();
+    final userId       = _prefs.getUserId();
     final refreshToken = _prefs.getRefreshToken();
 
-    if (token == null ||
-        role == null ||
-        name == null ||
-        email == null ||
+    // All critical fields must exist for a valid session
+    if (token  == null || role  == null ||
+        name   == null || email == null ||
         userId == null) {
       return null;
     }
 
     return UserModel(
-      userId: userId,
-      role: role,
-      token: token,
-      refreshToken: refreshToken ?? '',
-      name: name,
-      email: email,
+      userId:            userId,
+      role:              role,
+      token:             token,
+      refreshToken:      refreshToken ?? '',
+      name:              name,
+      email:             email,
       isProfileComplete: _prefs.isProfileComplete(),
-      onboardingStep: _prefs.getOnboardingStep(),
+      onboardingStep:    _prefs.getOnboardingStep(),
     );
   }
 
   // ─── Update onboarding step ───────────────────────────────────────────────
+  // Called after each doctor onboarding step completes
   Future<void> updateOnboardingStep(int step) async {
     await _prefs.setOnboardingStep(step);
   }
 
   // ─── Mark profile complete ────────────────────────────────────────────────
+  // Called after user/doctor finishes all profile steps
   Future<void> markProfileComplete() async {
     await _prefs.setProfileComplete();
   }
@@ -191,8 +197,20 @@ class AuthRepository {
   bool get isLoggedIn => _prefs.isLoggedIn;
 
   // ─── Logout ───────────────────────────────────────────────────────────────
-  Future<void> logout() async {
+  // ─── Logout ───────────────────────────────────────────────────────────────
+Future<void> logout() async {
+  // ✅ Step 1 — Best-effort server call FIRST
+  // Token still exists in SharedPrefs at this point
+  // So DioClient interceptor can attach it to the Authorization header
+  try {
     await _api.logout();
-    await _prefs.clearUser();
+  } catch (_) {
+    // Silently swallowed — 401 expired / network error / 500
+    // Local session clears regardless in Step 2
   }
+
+  // ✅ Step 2 — Clear local session AFTER API call
+  // Runs whether API succeeded or failed
+  await _prefs.clearUser();
+}
 }
