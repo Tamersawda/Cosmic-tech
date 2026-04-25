@@ -189,6 +189,110 @@ if ($path === '/appointments/doctor') {
     exit;
 }
 
+if (preg_match('#^/appointments/([^/]+)/cancel$#', $path, $matches)) {
+    $payload = AuthMiddleware::authenticate();
+    if ($payload) $appointmentController->cancel($payload, $matches[1]);
+    exit;
+}
+
+if (preg_match('#^/appointments/([^/]+)$#', $path, $matches)) {
+    $payload = AuthMiddleware::authenticate();
+    if (!$payload) exit;
+    $appointmentId = $matches[1];
+
+    if ($method === 'GET') $appointmentController->get($payload, $appointmentId);
+    elseif ($method === 'PUT') $appointmentController->update($payload, $appointmentId);
+    exit;
+}
+
+// ------------------------------------------------------------------
+// AVAILABLE SLOT ROUTES
+// ------------------------------------------------------------------
+if ($path === '/appointments/available-slots' && $method === 'GET') {
+    $payload = AuthMiddleware::authenticate();
+    if ($payload) $slotController->getSlots($payload);
+    exit;
+}
+
+if (strpos($path, '/available-slots') === 0) {
+    $payload = AuthMiddleware::authenticate();
+    if (!$payload) exit;
+
+    $normalizedPath = substr($path, 16);
+    if (empty($normalizedPath)) $normalizedPath = '/';
+
+    if ($method === 'POST' && $normalizedPath === '/') {
+        $slotController->create($payload);
+    } elseif ($method === 'GET' && strpos($normalizedPath, '/doctor/') === 0) {
+        $doctorId = substr($normalizedPath, 8);
+        $slotController->getDoctorSlots($payload, $doctorId);
+    } elseif (preg_match('#^/([^/]+)$#', $normalizedPath, $matches)) {
+        $slotId = $matches[1];
+        if ($method === 'GET') $slotController->get($payload, $slotId);
+        elseif ($method === 'PUT') $slotController->update($payload, $slotId);
+        elseif ($method === 'DELETE') $slotController->delete($payload, $slotId);
+    }
+    exit;
+}
+
+// ------------------------------------------------------------------
+// CONSULTATION ROUTES
+// ------------------------------------------------------------------
+if (strpos($path, '/consultations') === 0) {
+    $payload = AuthMiddleware::authenticate();
+    if (!$payload) exit;
+
+    $normalizedPath = substr($path, 14);
+    if (empty($normalizedPath)) $normalizedPath = '/';
+
+    if ($method === 'GET' && $normalizedPath === '/client') {
+        $consultationController->getClientConsultations($payload);
+    } elseif ($method === 'GET' && $normalizedPath === '/doctor') {
+        $consultationController->getDoctorConsultations($payload);
+    } elseif (preg_match('#^/([^/]+)/start$#', $normalizedPath, $matches)) {
+        $consultationController->start($payload, $matches[1]);
+    } elseif (preg_match('#^/([^/]+)/end$#', $normalizedPath, $matches)) {
+        $consultationController->end($payload, $matches[1]);
+    } elseif (preg_match('#^/([^/]+)$#', $normalizedPath, $matches)) {
+        $consultationController->get($payload, $matches[1]);
+    }
+    exit;
+}
+
+// ------------------------------------------------------------------
+// MESSAGE ROUTES
+// ------------------------------------------------------------------
+if (strpos($path, '/messages') === 0) {
+    $payload = AuthMiddleware::authenticate();
+    if (!$payload) exit;
+
+    $normalizedPath = substr($path, 9);
+    if (empty($normalizedPath)) $normalizedPath = '/';
+
+    if ($method === 'GET' && $normalizedPath === '/inbox') {
+        $messageController->getInbox($payload);
+    } elseif ($method === 'GET' && $normalizedPath === '/sent') {
+        $messageController->getSent($payload);
+    } elseif ($method === 'POST' && $normalizedPath === '/') {
+        $messageController->sendMessage($payload);
+    } elseif (preg_match('#^/([^/]+)$#', $normalizedPath, $matches)) {
+        $messageId = $matches[1];
+        if ($method === 'GET') $messageController->get($payload, $messageId);
+        elseif ($method === 'PUT') $messageController->update($payload, $messageId);
+        elseif ($method === 'DELETE') $messageController->delete($payload, $messageId);
+    }
+    exit;
+}
+
+if (preg_match('#^/appointments/([^/]+)/messages$#', $path, $matches)) {
+    $payload = AuthMiddleware::authenticate();
+    if (!$payload) exit;
+    
+    if ($method === 'POST') $messageController->send($payload, $matches[1]);
+    else $messageController->getAppointmentMessages($payload, $matches[1]);
+    exit;
+}
+
 // ------------------------------------------------------------------
 // FALLBACK 404
 // ------------------------------------------------------------------

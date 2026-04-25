@@ -323,6 +323,7 @@ class DoctorProfile {
                 JOIN users u ON dp.user_id = u.id
                 WHERE u.is_active = 1
                 AND dp.is_active = 1
+                AND dp.is_verified = 1
                 ORDER BY u.full_name ASC
             ');
             $stmt->execute();
@@ -360,5 +361,18 @@ class DoctorProfile {
             WHERE user_id = ?
         ');
         return $stmt->execute([$isActive, $userId]);
+    }
+
+    /**
+     * Verify or reject a doctor.
+     */
+    public function verifyDoctor(string $userId, string $status): bool {
+        $isVerified = ($status === 'approved') ? 1 : 0;
+        $stmt = $this->db->prepare('
+            UPDATE doctor_profiles
+            SET verification_status = ?, is_verified = ?, updated_at = UTC_TIMESTAMP()
+            WHERE user_id = ?
+        ');
+        return $stmt->execute([$status, $isVerified, $userId]);
     }
 }

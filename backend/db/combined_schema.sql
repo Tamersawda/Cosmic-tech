@@ -79,7 +79,8 @@ CREATE TABLE users (
     PRIMARY KEY (id),
     UNIQUE KEY uq_users_email    (email),
     INDEX idx_users_email        (email),
-    INDEX idx_users_user_type    (user_type)
+    INDEX idx_users_user_type    (user_type),
+    INDEX idx_users_active       (is_active)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -104,7 +105,8 @@ CREATE TABLE doctor_profiles (
     gender                      ENUM('male', 'female', 'other', 'prefer_not_to_say') NOT NULL DEFAULT 'other',
     date_of_birth               DATE            NULL,
     phone_number                VARCHAR(30)     NULL,
-    profile_photo               VARCHAR(500)    NULL,
+    profile_photo_url           VARCHAR(255)    NULL,
+    is_active                   TINYINT(1)      NOT NULL DEFAULT 1,
 
     primary_specialty           VARCHAR(150)    NOT NULL DEFAULT '',
     sub_specializations         JSON            NULL,
@@ -147,6 +149,7 @@ CREATE TABLE doctor_profiles (
     INDEX idx_doctor_experience     (years_of_experience),
     INDEX idx_doctor_verified       (is_verified),
     INDEX idx_doctor_city           (city),
+    INDEX idx_doctor_active         (is_active),
 
     CONSTRAINT fk_doctor_user
         FOREIGN KEY (user_id) REFERENCES users(id)

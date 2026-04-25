@@ -76,6 +76,111 @@ class AdminController {
         }
     }
 
+    /**
+     * Verify or reject a doctor profile
+     * PATCH /api/admin/verify-doctor
+     */
+    public function verifyDoctor(object $payload): void {
+        try {
+            // Check authorization
+            if (!isset($payload->userType) || $payload->userType !== 'admin') {
+                Response::error('Forbidden: Admin access required', 403);
+                return;
+            }
+
+            $input = $this->getInputData();
+
+            $isValid = $this->validator->validate($input, [
+                'doctorId' => ['required', 'string'],
+                'status'   => ['required', ['in', 'approved', 'rejected', 'pending']],
+            ]);
+
+            if (!$isValid) {
+                Response::validation($this->validator->getErrors());
+                return;
+            }
+
+            $doctorId = $input['doctorId'];
+            $status   = $input['status'];
+
+            $doctorModel = new \Backend\Models\DoctorProfile();
+            
+            if (!$doctorModel->exists($doctorId)) {
+                Response::error('Doctor profile not found', 404);
+                return;
+            }
+
+            $success = $doctorModel->verifyDoctor($doctorId, $status);
+
+            if (!$success) {
+                Response::error('Failed to update verification status', 500);
+                return;
+            }
+
+            Response::success([
+                'message' => "Doctor verification status updated to $status",
+                'isVerified' => ($status === 'approved')
+            ]);
+
+        } catch (\Exception $e) {
+            error_log('Verify doctor error: ' . $e->getMessage());
+            Response::error('Internal server error', 500);
+        }
+    }
+
+    /**
+     * List all doctors (Admin only)
+     * GET /api/admin/doctors
+     */
+    public function listDoctors(object $payload): void {
+        try {
+            if (!isset($payload->userType) || $payload->userType !== 'admin') {
+                Response::error('Forbidden: Admin access required', 403);
+                return;
+            }
+
+            $doctorModel = new \Backend\Models\DoctorProfile();
+            $doctors = $doctorModel->getAllDoctors(); // This model method already exists
+
+            Response::success($doctors);
+
+        } catch (\Exception $e) {
+            error_log('Admin list doctors error: ' . $e->getMessage());
+            Response::error('Internal server error', 500);
+        }
+    }
+
+    /**
+     * List all appointments (Admin only)
+     * GET /api/admin/appointments
+     */
+    public function listAppointments(object $payload): void {
+        try {
+            if (!isset($payload->userType) || $payload->userType !== 'admin') {
+                Response::error('Forbidden: Admin access required', 403);
+                return;
+            }
+
+            $appointmentModel = new \Backend\Models\Appointment();
+            // Assuming we want ALL appointments
+            $stmt = $appointmentModel->db->prepare("
+                SELECT a.*, u.full_name as client_name, ud.full_name as doctor_name
+                FROM appointments a
+                JOIN users u ON a.client_id = u.id
+                JOIN users ud ON a.doctor_id = ud.id
+                ORDER BY a.scheduled_date DESC, a.scheduled_time DESC
+            ");
+            $stmt->execute();
+            $appointments = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            Response::success($appointments);
+
+        } catch (\Exception $e) {
+            error_log('Admin list appointments error: ' . $e->getMessage());
+            Response::error('Internal server error', 500);
+        }
+    }
+
     private function getInputData(): array {
         $input = file_get_contents('php://input');
         $data = json_decode($input, true) ?? [];

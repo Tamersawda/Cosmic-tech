@@ -1,5 +1,11 @@
 <?php
 
+namespace Backend\Controllers;
+
+use Backend\Models\DoctorProfile;
+use Backend\Utils\Response;
+use Backend\Utils\Validator;
+
 require_once __DIR__ . '/../models/DoctorProfile.php';
 require_once __DIR__ . '/../utils/Response.php';
 require_once __DIR__ . '/../utils/Validator.php';
@@ -9,9 +15,9 @@ class DoctorProfileController
     private $doctorModel;
     private $validator;
 
-    public function __construct($db)
+    public function __construct($db = null)
     {
-        $this->doctorModel = new DoctorProfile($db);
+        $this->doctorModel = new DoctorProfile();
         $this->validator = new Validator();
     }
 
@@ -261,5 +267,53 @@ class DoctorProfileController
             'message' => "Status updated successfully",
             'isActive' => (bool)$isActive
         ]);
+    }
+
+    public function list($user)
+    {
+        try {
+            $doctors = $this->doctorModel->getAllDoctors();
+            Response::success($doctors);
+        } catch (\Exception $e) {
+            Response::error("Failed to fetch doctors list", 500);
+        }
+    }
+
+    public function getById($user, $doctorId)
+    {
+        $profile = $this->doctorModel->findByUserId($doctorId);
+
+        if (!$profile) {
+            Response::error("Doctor not found", 404);
+            return;
+        }
+
+        // 🛡️ Public Profile Protection (Phase 4)
+        // If the viewer is not an admin, they can only see verified and active doctors
+        $viewerRole = $user->userType ?? $user->role ?? null;
+        
+        if ($viewerRole !== 'admin') {
+            if (!$profile['is_verified'] || !$profile['is_active']) {
+                Response::error("Doctor not available", 403);
+                return;
+            }
+        }
+
+        // ✅ Default Image handling
+        if (empty($profile['profile_photo_url'])) {
+            $profile['profilePhotoUrl'] = "uploads/doctors/default-doctor.png";
+        } else {
+            $profile['profilePhotoUrl'] = $profile['profile_photo_url'];
+        }
+
+        // Map internal snake_case to camelCase
+        $profile['primarySpecialty'] = $profile['primary_specialty'];
+        $profile['yearsOfExperience'] = $profile['years_of_experience'];
+        $profile['isActive'] = (bool)$profile['is_active'];
+        $profile['isVerified'] = (bool)$profile['is_verified'];
+
+        unset($profile['is_active'], $profile['is_verified'], $profile['profile_photo_url'], $profile['languages_spoken'], $profile['sub_specializations']);
+
+        Response::success($profile);
     }
 }

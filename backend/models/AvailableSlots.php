@@ -27,10 +27,13 @@ class AvailableSlots {
         string $fromDate,
         string $toDate
     ): array {
-        // Validate doctor exists
-        $doctorExists = $this->doctorExists($doctorId);
-        if (!$doctorExists) {
+        // Validate doctor exists, is active and verified
+        $doctor = $this->getDoctorStatus($doctorId);
+        if (!$doctor) {
             throw new \Exception('Doctor not found');
+        }
+        if (!$doctor['is_active'] || !$doctor['is_verified']) {
+            throw new \Exception('Doctor not available');
         }
 
         // Validate dates
@@ -156,16 +159,16 @@ class AvailableSlots {
     }
 
     /**
-     * Check if doctor exists
+     * Check if doctor exists and get status
      */
-    private function doctorExists(string $doctorId): bool {
+    private function getDoctorStatus(string $doctorId): ?array {
         $stmt = $this->db->prepare('
-            SELECT 1 FROM doctor_profiles
+            SELECT is_active, is_verified FROM doctor_profiles
             WHERE user_id = ?
             LIMIT 1
         ');
         $stmt->execute([$doctorId]);
-        return $stmt->fetch(PDO::FETCH_ASSOC) !== false;
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
     /**

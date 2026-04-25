@@ -34,5 +34,38 @@ return function(string $method, string $path) {
         }
     }
 
+    if ($method === 'GET') {
+        if ($normalizedPath === '/doctors') {
+            $payload = AuthMiddleware::authenticate();
+            if ($payload === null) {
+                Response::error('Unauthorized', 401);
+                return;
+            }
+            $controller->listDoctors($payload);
+            return;
+        }
+        if ($normalizedPath === '/appointments') {
+            $payload = AuthMiddleware::authenticate();
+            if ($payload === null) {
+                Response::error('Unauthorized', 401);
+                return;
+            }
+            $controller->listAppointments($payload);
+            return;
+        }
+    }
+
+    if ($method === 'PATCH' || $method === 'PUT') {
+        if ($normalizedPath === '/verify-doctor') {
+            $payload = AuthMiddleware::authenticate();
+            if ($payload === null) {
+                Response::error('Unauthorized', 401);
+                return;
+            }
+            $controller->verifyDoctor($payload);
+            return;
+        }
+    }
+
     Response::error('Route not found in Admin: ' . $method . ' ' . $path, 404);
 };

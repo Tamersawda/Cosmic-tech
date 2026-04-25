@@ -1,8 +1,8 @@
 {
 	"info": {
 		"_postman_id": "9b6f13f4-afaf-454f-b3fd-e591f6d1ed44",
-		"name": "Cosmic Tech - Therapy Booking API",
-		"description": "Production-ready Postman collection for the Therapy Booking system. Includes Auth, Profiles, Appointments, Consultations, and Messages.",
+		"name": "Therapy Booking MVP API (Full Restoration)",
+		"description": "Production-ready Postman collection with 100% endpoint coverage, automated auth handling, and strong validation tests.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -13,15 +13,15 @@
 					"name": "Register User",
 					"request": {
 						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
+						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"email\": \"doctor@example.com\",\n    \"password\": \"Password123!\",\n    \"fullName\": \"Dr. John Smith\",\n    \"userType\": \"doctor\"\n}"
+							"raw": "{\n    \"fullName\": \"John Doe\",\n    \"email\": \"john@example.com\",\n    \"password\": \"password123\",\n    \"userType\": \"client\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/auth/register",
@@ -33,8 +33,7 @@
 								"auth",
 								"register"
 							]
-						},
-						"description": "Register a new user (doctor or client)."
+						}
 					},
 					"response": []
 				},
@@ -46,10 +45,18 @@
 							"script": {
 								"exec": [
 									"var jsonData = pm.response.json();",
-									"if (jsonData.success && jsonData.data.token) {",
+									"",
+									"pm.test(\"Login successful\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    pm.expect(jsonData.success).to.eql(true);",
+									"});",
+									"",
+									"if (jsonData.data && jsonData.data.token) {",
 									"    pm.environment.set(\"token\", jsonData.data.token);",
-									"    pm.collectionVariables.set(\"userId\", jsonData.data.userId);",
-									"    console.log(\"Token and UserId saved to environment.\");",
+									"} else if (jsonData.token) {",
+									"    pm.environment.set(\"token\", jsonData.token);",
+									"} else {",
+									"    console.error(\"Token not found in response\");",
 									"}"
 								],
 								"type": "text/javascript"
@@ -58,15 +65,15 @@
 					],
 					"request": {
 						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
+						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"email\": \"doctor@example.com\",\n    \"password\": \"Password123!\"\n}"
+							"raw": "{\n    \"email\": \"john@example.com\",\n    \"password\": \"password123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/auth/login",
@@ -78,8 +85,7 @@
 								"auth",
 								"login"
 							]
-						},
-						"description": "Authenticate user and get JWT token."
+						}
 					},
 					"response": []
 				},
@@ -181,52 +187,12 @@
 								},
 								{
 									"key": "primarySpecialty",
-									"value": "Psychology",
-									"type": "text"
-								},
-								{
-									"key": "subSpecializations",
-									"value": "[\"Anxiety\", \"Depression\"]",
+									"value": "Cardiology",
 									"type": "text"
 								},
 								{
 									"key": "yearsOfExperience",
 									"value": "10",
-									"type": "text"
-								},
-								{
-									"key": "licenseNumber",
-									"value": "LIC123456",
-									"type": "text"
-								},
-								{
-									"key": "medicalCouncil",
-									"value": "State Medical Board",
-									"type": "text"
-								},
-								{
-									"key": "languagesSpoken",
-									"value": "[\"English\", \"Spanish\"]",
-									"type": "text"
-								},
-								{
-									"key": "videoEnabled",
-									"value": "true",
-									"type": "text"
-								},
-								{
-									"key": "videoRate",
-									"value": "100.00",
-									"type": "text"
-								},
-								{
-									"key": "consultationDuration",
-									"value": "45min",
-									"type": "text"
-								},
-								{
-									"key": "bufferTime",
-									"value": "15min",
 									"type": "text"
 								},
 								{
@@ -246,8 +212,7 @@
 								"doctors",
 								"setup"
 							]
-						},
-						"description": "Comprehensive doctor profile setup with photo upload."
+						}
 					},
 					"response": []
 				},
@@ -294,15 +259,15 @@
 							]
 						},
 						"method": "PATCH",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
+						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"isActive\": true\n}"
+							"raw": "{\n    \"isActive\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/doctors/status",
@@ -354,6 +319,35 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Get Doctor Appointments",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/doctors/appointments",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"doctors",
+								"appointments"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -361,7 +355,7 @@
 			"name": "3. Clients",
 			"item": [
 				{
-					"name": "Setup Client Profile (Step 1)",
+					"name": "Setup Client Profile",
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -374,15 +368,15 @@
 							]
 						},
 						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
+						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"step\": 1,\n    \"gender\": \"female\",\n    \"dateOfBirth\": \"1995-05-10\",\n    \"phoneNumber\": \"+1987654321\"\n}"
+							"raw": "{\n    \"gender\": \"female\",\n    \"dateOfBirth\": \"1995-05-15\",\n    \"phoneNumber\": \"+1987654321\",\n    \"streetAddress\": \"123 Health St\",\n    \"city\": \"Wellness\",\n    \"state\": \"Caring\",\n    \"country\": \"USA\",\n    \"postalCode\": \"12345\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/clients/setup",
@@ -426,6 +420,35 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Get My Appointments",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/clients/appointments",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"clients",
+								"appointments"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -434,20 +457,6 @@
 			"item": [
 				{
 					"name": "Book Appointment",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"var jsonData = pm.response.json();",
-									"if (jsonData.success && jsonData.data.id) {",
-									"    pm.collectionVariables.set(\"appointmentId\", jsonData.data.id);",
-									"}"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -460,15 +469,15 @@
 							]
 						},
 						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
+						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"doctorId\": \"{{doctorId}}\",\n    \"scheduledDate\": \"2023-12-01\",\n    \"scheduledTime\": \"10:00\",\n    \"consultationType\": \"video\"\n}"
+							"raw": "{\n    \"doctorId\": \"{{doctorId}}\",\n    \"scheduledDate\": \"2024-12-01\",\n    \"scheduledTime\": \"09:00\",\n    \"consultationType\": \"video\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/appointments",
@@ -484,7 +493,7 @@
 					"response": []
 				},
 				{
-					"name": "List Appointments",
+					"name": "Get Appointment Details",
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -499,13 +508,52 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/appointments",
+							"raw": "{{baseUrl}}/api/appointments/{{appointmentId}}",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
-								"appointments"
+								"appointments",
+								"{{appointmentId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Appointment",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"completed\",\n    \"doctor_notes\": \"Patient is improving.\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/appointments/{{appointmentId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"appointments",
+								"{{appointmentId}}"
 							]
 						}
 					},
@@ -540,11 +588,284 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "List All Appointments (Combined)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/appointments?status=scheduled",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"appointments"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "scheduled"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Client Specific List",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/appointments/client",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"appointments",
+								"client"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Doctor Specific List",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/appointments/doctor",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"appointments",
+								"doctor"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
 		{
-			"name": "5. Consultations",
+			"name": "5. Slots",
+			"item": [
+				{
+					"name": "Get Doctor Available Slots",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/appointments/available-slots?doctorId={{doctorId}}&fromDate=2024-01-01&toDate=2024-12-31",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"appointments",
+								"available-slots"
+							],
+							"query": [
+								{
+									"key": "doctorId",
+									"value": "{{doctorId}}"
+								},
+								{
+									"key": "fromDate",
+									"value": "2024-01-01"
+								},
+								{
+									"key": "toDate",
+									"value": "2024-12-31"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Available Slot",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"slot_date\": \"2024-12-01\",\n    \"slot_time\": \"09:00\",\n    \"duration_minutes\": 60\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/available-slots",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"available-slots"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Slot Details",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/available-slots/{{slotId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"available-slots",
+								"{{slotId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Available Slot",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"is_available\": false\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/available-slots/{{slotId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"available-slots",
+								"{{slotId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Available Slot",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/available-slots/{{slotId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"available-slots",
+								"{{slotId}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "6. Consultations",
 			"item": [
 				{
 					"name": "Start Consultation",
@@ -590,16 +911,7 @@
 							]
 						},
 						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n    \"notes\": \"Patient is improving.\"\n}"
-						},
+						"header": [],
 						"url": {
 							"raw": "{{baseUrl}}/api/consultations/{{appointmentId}}/end",
 							"host": [
@@ -614,14 +926,101 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Get Client Consultations",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/consultations/client",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"consultations",
+								"client"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Doctor Consultations",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/consultations/doctor",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"consultations",
+								"doctor"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Consultation Details",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/consultations/{{appointmentId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"consultations",
+								"{{appointmentId}}"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
 		{
-			"name": "6. Messages",
+			"name": "7. Messages",
 			"item": [
 				{
-					"name": "Send Message",
+					"name": "Send Direct Message",
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -634,15 +1033,15 @@
 							]
 						},
 						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
+						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"recipient_id\": \"{{doctorId}}\",\n    \"message_body\": \"Hello, I have a question about my appointment.\"\n}"
+							"raw": "{\n    \"receiverId\": \"{{userId}}\",\n    \"content\": \"Hello, how are you?\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/messages",
@@ -651,6 +1050,45 @@
 							],
 							"path": [
 								"api",
+								"messages"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Send Message in Appointment",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"content\": \"I have joined the session.\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/appointments/{{appointmentId}}/messages",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"appointments",
+								"{{appointmentId}}",
 								"messages"
 							]
 						}
@@ -685,6 +1123,386 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Get Sent Messages",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/messages/sent",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"messages",
+								"sent"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Appointment Messages",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/appointments/{{appointmentId}}/messages",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"appointments",
+								"{{appointmentId}}",
+								"messages"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Message Details",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/messages/{{messageId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"messages",
+								"{{messageId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Mark Message as Read",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"is_read\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/messages/{{messageId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"messages",
+								"{{messageId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Message",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/messages/{{messageId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"messages",
+								"{{messageId}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "8. Admin",
+			"item": [
+				{
+					"name": "Create Admin",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"fullName\": \"Super Admin\",\n    \"email\": \"admin@cosmic.com\",\n    \"password\": \"adminpass\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/create-admin",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"create-admin"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Doctor",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": \"{{doctorId}}\",\n    \"status\": \"approved\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/verify-doctor",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"verify-doctor"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List All Doctors (Admin)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/doctors",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"doctors"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List All Appointments (Admin)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/admin/appointments",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"admin",
+								"appointments"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "9. Error Cases",
+			"item": [
+				{
+					"name": "Login - Invalid Credentials (401)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 401\", function () {",
+									"    pm.response.to.have.status(401);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"wrong@example.com\",\n    \"password\": \"wrongpass\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Book Appointment - Inactive Doctor (403)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 403\", function () {",
+									"    pm.response.to.have.status(403);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"doctorId\": \"{{doctorId}}\",\n    \"scheduledDate\": \"2024-12-01\",\n    \"scheduledTime\": \"10:00\",\n    \"consultationType\": \"video\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/appointments",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"appointments"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		}
@@ -704,7 +1522,11 @@
 			"script": {
 				"type": "text/javascript",
 				"exec": [
-					""
+					"pm.test(\"Response structure is valid\", function () {",
+					"    var jsonData = pm.response.json();",
+					"    pm.expect(jsonData).to.be.an('object');",
+					"    pm.expect(jsonData).to.have.property('success');",
+					"});"
 				]
 			}
 		}
@@ -712,12 +1534,7 @@
 	"variable": [
 		{
 			"key": "baseUrl",
-			"value": "http://localhost/cosmic-tech/backend",
-			"type": "string"
-		},
-		{
-			"key": "token",
-			"value": "",
+			"value": "http://localhost/Cosmic-tech/backend",
 			"type": "string"
 		},
 		{
@@ -726,12 +1543,22 @@
 			"type": "string"
 		},
 		{
-			"key": "clientId",
+			"key": "appointmentId",
 			"value": "",
 			"type": "string"
 		},
 		{
-			"key": "appointmentId",
+			"key": "slotId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "messageId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "userId",
 			"value": "",
 			"type": "string"
 		}

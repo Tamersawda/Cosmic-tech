@@ -86,10 +86,20 @@ class AppointmentController {
                 return;
             }
 
-            // Doctor must exist
+            // Doctor must exist, be active, and be verified
             $doctor = $this->doctorModel->findByUserId($doctorId);
-            if (!$doctor || !$doctor['is_active']) {
-                Response::error('Doctor not found or inactive', 400);
+            if (!$doctor) {
+                Response::error('Doctor not found', 404);
+                return;
+            }
+
+            if (!$doctor['is_active']) {
+                Response::error('Doctor is currently inactive', 403);
+                return;
+            }
+
+            if (!$doctor['is_verified']) {
+                Response::error('Doctor is not verified yet', 403);
                 return;
             }
 
@@ -222,6 +232,7 @@ class AppointmentController {
      */
     public function get(object $payload, string $appointmentId): void {
         try {
+            $userId = $payload->userId ?? $payload->user_id ?? null;
             $appointment = $this->appointmentModel->findById($appointmentId);
 
             if (!$appointment) {
@@ -230,7 +241,7 @@ class AppointmentController {
             }
 
             // Only the doctor or client belonging to this appointment may view it
-            if ($appointment['doctor_id'] !== $userId && $appointment['client_id'] !== $userId) {
+            if ($appointment['doctor_id'] !== $userId && $appointment['client_id'] !== $userId && ($payload->userType ?? $payload->role ?? null) !== 'admin') {
                 Response::error('Forbidden', 403);
                 return;
             }
