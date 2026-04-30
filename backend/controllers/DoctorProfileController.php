@@ -66,8 +66,15 @@ class DoctorProfileController
             return;
         }
 
-        // 🔐 Use authenticated user_id
-        $userId = $user['id'];
+        // 🔐 Extract user_id from JWT payload (object) or legacy array
+        $userId = is_array($user)
+            ? ($user['id'] ?? $user['userId'] ?? null)
+            : ($user->userId ?? $user->user_id ?? $user->id ?? null);
+
+        if (!$userId) {
+            Response::error('Could not identify authenticated user', 401, 'UNAUTHORIZED');
+            return;
+        }
 
         // Prepare storage path - ensure it's absolute and safe
         $uploadDir = dirname(__DIR__, 1) . '/public/uploads/doctors/';
@@ -124,7 +131,7 @@ class DoctorProfileController
         ]);
 
         if (!$validation['valid']) {
-            Response::error("Validation failed", 400, $validation['errors']);
+            Response::error('Validation failed', 400, 'VALIDATION_ERROR', $validation['errors']);
             return;
         }
 

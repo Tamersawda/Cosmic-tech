@@ -38,10 +38,11 @@ DROP TABLE IF EXISTS reviews;
 DROP TABLE IF EXISTS messages;
 DROP TABLE IF EXISTS consultation_sessions;
 DROP TABLE IF EXISTS appointments;
+DROP TABLE IF EXISTS available_slots;
 DROP TABLE IF EXISTS doctor_weekly_schedule;
 DROP TABLE IF EXISTS doctor_qualifications;
 DROP TABLE IF EXISTS doctor_profiles;
-DROP TABLE IF EXISTS patient_profiles;
+DROP TABLE IF EXISTS client_profiles;
 DROP TABLE IF EXISTS users;
 
 
@@ -63,7 +64,7 @@ CREATE TABLE users (
     email                       VARCHAR(191)    NOT NULL,
     password                    VARCHAR(255)    NOT NULL,
     full_name                   VARCHAR(255)    NOT NULL DEFAULT '',
-    user_type                   ENUM('admin', 'doctor', 'user') NOT NULL,
+    user_type                   ENUM('admin', 'doctor', 'client') NOT NULL,
     is_active                   TINYINT(1)      NOT NULL DEFAULT 1,
     is_profile_completed        BOOLEAN         DEFAULT FALSE,
     onboarding_step             INT             DEFAULT 0,
@@ -158,27 +159,24 @@ CREATE TABLE doctor_profiles (
 
 
 -- ============================================================
--- 3. PATIENT PROFILES TABLE
--- PHP references: user_id, full_name, age, gender,
---   phone_number, profile_photo, medical_history,
---   created_at, updated_at
--- Note: 'age' column used by PatientProfile.php setupProfile()
---       and DoctorProfile.php getAppointments() — kept as INT.
+-- 3. CLIENT PROFILES TABLE
+-- PHP references: user_id, full_name, gender, date_of_birth,
+--   phone_number, allergies, current_medications,
+--   emergency_contact_name/relationship/phone, created_at, updated_at
+-- Note: Renamed from patient_profiles. Matches ClientProfile.php
 -- ============================================================
-CREATE TABLE patient_profiles (
+CREATE TABLE client_profiles (
     user_id                         CHAR(36)        NOT NULL,
 
     full_name                       VARCHAR(200)    NOT NULL DEFAULT '',
-    age                             TINYINT UNSIGNED NULL,
     gender                          ENUM('male', 'female', 'other') NOT NULL DEFAULT 'other',
     date_of_birth                   DATE            NULL,
     phone_number                    VARCHAR(30)     NULL,
     profile_photo                   VARCHAR(500)    NULL,
 
     -- Medical (optional)
-    medical_history                 TEXT            NULL,
-    allergies                       JSON            NULL,   -- ["Penicillin"]
-    current_medications             JSON            NULL,   -- ["Sertraline 50mg"]
+    allergies                       JSON            NULL,
+    current_medications             JSON            NULL,
 
     -- Emergency contact
     emergency_contact_name          VARCHAR(150)    NULL,
@@ -189,9 +187,9 @@ CREATE TABLE patient_profiles (
     updated_at                      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (user_id),
-    INDEX idx_patient_phone (phone_number),
+    INDEX idx_client_phone (phone_number),
 
-    CONSTRAINT fk_patient_user
+    CONSTRAINT fk_client_user
         FOREIGN KEY (user_id) REFERENCES users(id)
         ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -246,16 +244,14 @@ CREATE TABLE doctor_weekly_schedule (
 
 -- ============================================================
 -- 6. APPOINTMENTS TABLE
--- PHP references: id, doctor_id, patient_id, scheduled_date,
+-- PHP references: id, doctor_id, client_id, scheduled_date,
 --   scheduled_time, end_time, consultation_type, status,
 --   notes, created_at, updated_at
--- Note: doctor_id → doctor_profiles.user_id
---       patient_id → patient_profiles.user_id
 -- ============================================================
 CREATE TABLE appointments (
     id                  CHAR(36)        NOT NULL DEFAULT (UUID()),
     doctor_id           CHAR(36)        NOT NULL,
-    patient_id          CHAR(36)        NOT NULL,
+    client_id           CHAR(36)        NOT NULL,
 
     scheduled_date      DATE            NOT NULL,
     scheduled_time      TIME            NOT NULL,
@@ -280,15 +276,15 @@ CREATE TABLE appointments (
     PRIMARY KEY (id),
     UNIQUE KEY uq_appointment_slot      (doctor_id, scheduled_date, scheduled_time),
     INDEX idx_appt_doctor_date          (doctor_id, scheduled_date),
-    INDEX idx_appt_patient_date         (patient_id, scheduled_date),
+    INDEX idx_appt_client_date          (client_id, scheduled_date),
     INDEX idx_appt_status               (status),
 
     CONSTRAINT fk_appt_doctor
         FOREIGN KEY (doctor_id) REFERENCES doctor_profiles(user_id)
         ON DELETE CASCADE ON UPDATE CASCADE,
 
-    CONSTRAINT fk_appt_patient
-        FOREIGN KEY (patient_id) REFERENCES patient_profiles(user_id)
+    CONSTRAINT fk_appt_client
+        FOREIGN KEY (client_id) REFERENCES client_profiles(user_id)
         ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -361,7 +357,7 @@ CREATE TABLE messages (
 CREATE TABLE reviews (
     id              CHAR(36)        NOT NULL DEFAULT (UUID()),
     doctor_id       CHAR(36)        NOT NULL,
-    patient_id      CHAR(36)        NOT NULL,
+    client_id       CHAR(36)        NOT NULL,
     appointment_id  CHAR(36)        NULL,
     rating          TINYINT         NOT NULL,
     title           VARCHAR(200)    NULL,
@@ -370,15 +366,15 @@ CREATE TABLE reviews (
     created_at      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),
-    UNIQUE KEY uq_review_patient_appointment (patient_id, appointment_id),
+    UNIQUE KEY uq_review_client_appointment (client_id, appointment_id),
     INDEX idx_review_doctor (doctor_id),
 
     CONSTRAINT fk_review_doctor
         FOREIGN KEY (doctor_id) REFERENCES doctor_profiles(user_id)
         ON DELETE CASCADE ON UPDATE CASCADE,
 
-    CONSTRAINT fk_review_patient
-        FOREIGN KEY (patient_id) REFERENCES patient_profiles(user_id)
+    CONSTRAINT fk_review_client
+        FOREIGN KEY (client_id) REFERENCES client_profiles(user_id)
         ON DELETE CASCADE ON UPDATE CASCADE,
 
     CONSTRAINT fk_review_appointment
@@ -460,6 +456,24 @@ CREATE TABLE refresh_tokens (
         ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Step 5: Create available_slots
+CREATE TABLE IF NOT EXISTS available_slots (
+    id               CHAR(36)   NOT NULL DEFAULT (UUID()),
+    doctor_id        CHAR(36)   NOT NULL,
+    slot_date        DATE       NOT NULL,
+    slot_time        TIME       NOT NULL,
+    end_time         TIME       NOT NULL,
+    duration_minutes SMALLINT   NOT NULL DEFAULT 60,
+    is_available     TINYINT(1) NOT NULL DEFAULT 1,
+    created_at       DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at       DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_slot (doctor_id, slot_date, slot_time),
+    INDEX idx_slot_doctor_date (doctor_id, slot_date),
+    CONSTRAINT fk_slot_doctor
+        FOREIGN KEY (doctor_id) REFERENCES doctor_profiles(user_id)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;
 

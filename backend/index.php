@@ -156,8 +156,12 @@ try {
 } catch (Throwable $e) {
     http_response_code(500);
     echo json_encode([
-        'success' => false,
-        'message' => 'Internal Server Error',
-        'error' => getenv('APP_ENV') === 'development' ? $e->getMessage() : null
+        'error' => [
+            'code'    => 'INTERNAL_SERVER_ERROR',
+            'message' => 'Internal Server Error',
+            'details' => getenv('APP_ENV') === 'development'
+                ? ['exception' => $e->getMessage(), 'file' => $e->getFile(), 'line' => $e->getLine()]
+                : []
+        ]
     ]);
 }

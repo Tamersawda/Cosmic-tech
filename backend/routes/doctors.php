@@ -71,11 +71,9 @@ return function(string $method, string $path) {
         }
         if ($normalizedPath === '/appointments') {
             $payload = AuthMiddleware::authenticate();
-            if ($payload === null) {
-                Response::error('Unauthorized', 401);
-                return;
-            }
-            $controller->getAppointments($payload);
+            // Delegate to AppointmentController — DoctorProfileController has no getAppointments()
+            $apptController = new \Backend\Controllers\AppointmentController();
+            $apptController->getDoctorList($payload);
             return;
         }
         

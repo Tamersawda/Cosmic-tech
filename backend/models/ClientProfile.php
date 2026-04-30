@@ -64,7 +64,6 @@ class ClientProfile
             'gender' => 'gender',
             'dateOfBirth' => 'date_of_birth',
             'phoneNumber' => 'phone_number',
-            'medicalHistory' => 'medical_history',
             'allergies' => 'allergies',
             'currentMedications' => 'current_medications',
         ];

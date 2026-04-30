@@ -29,3 +29,4 @@ SELECT a.id, a.client_id
 FROM appointments a 
 LEFT JOIN users u ON a.client_id = u.id 
 WHERE u.id IS NULL;
+
