@@ -34,6 +34,7 @@ class DoctorTextField extends StatelessWidget {
   final bool filled;
   final Color? fillColor;
   final FormFieldValidator<String>? validator;
+  final ValueChanged<String>? onChanged;
 
   const DoctorTextField({
     super.key,
@@ -47,6 +48,7 @@ class DoctorTextField extends StatelessWidget {
     this.filled = true,
     this.fillColor,
     this.validator,
+    this.onChanged,
   });
 
   @override
@@ -56,6 +58,7 @@ class DoctorTextField extends StatelessWidget {
       keyboardType: keyboardType,
       enabled: enabled,
       validator: validator,
+      onChanged: onChanged,
       style: const TextStyle(
         fontSize: 15,
         color: AppColors.darkText,
@@ -111,12 +114,14 @@ class DoctorUnderlineTextField extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
   final TextInputType? keyboardType;
+  final ValueChanged<String>? onChanged;
 
   const DoctorUnderlineTextField({
     super.key,
     required this.controller,
     required this.hint,
     this.keyboardType,
+    this.onChanged,
   });
 
   @override
@@ -124,6 +129,7 @@ class DoctorUnderlineTextField extends StatelessWidget {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
+      onChanged: onChanged,
       style: const TextStyle(fontSize: 15, color: AppColors.darkText),
       decoration: InputDecoration(
         hintText: hint,

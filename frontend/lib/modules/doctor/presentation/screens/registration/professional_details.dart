@@ -6,6 +6,7 @@ import 'package:frontend/modules/doctor/presentation/widgets/registration/doctor
 import 'package:frontend/modules/doctor/presentation/widgets/registration/doctor_labeled_text_field.dart';
 import 'package:frontend/modules/doctor/presentation/widgets/registration/doctor_onboarding_progress.dart';
 import 'package:frontend/modules/doctor/presentation/widgets/registration/doctor_section_card.dart';
+import 'package:frontend/modules/doctor/presentation/widgets/registration/doctor_upload_box.dart';
 import 'package:frontend/core/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/modules/doctor/presentation/router/onboarding_page_route.dart';
@@ -20,58 +21,115 @@ class ProfessionalDetails extends StatefulWidget {
 class _ProfessionalDetailsState extends State<ProfessionalDetails> {
   final _formKey = GlobalKey<FormState>();
 
-  String? _selectedSpecialty;
-  String? _selectedCouncil;
-  int _yearsOfExperience = 0;
-
-  final List<String> _languages = ['English'];
-  final _langCtrl = TextEditingController();
-  final _subSpecCtrl = TextEditingController();
-  final _regNumberCtrl = TextEditingController();
-
-  final List<String> _specialties = [
-    'Cardiology',
-    'Dermatology',
-    'Emergency Medicine',
-    'Family Medicine',
-    'Gastroenterology',
-    'General Medicine',
-    'Neurology',
-    'Oncology',
-    'Orthopedics',
-    'Pediatrics',
-    'Psychiatry',
-    'Radiology',
-    'Surgery',
-    'Urology',
-    'Other',
+  // ── Professional Identity ─────────────────────────────────────────────────
+  String? _primaryTitle;
+  final _secondaryTitlesCtrl = TextEditingController();
+  static const List<String> _primaryTitleOptions = [
+    'Clinical Psychologist',
+    'Consultant Psychologist',
+    'Therapist',
   ];
 
-  final List<String> _councils = [
-    'Medical Council of India (MCI)',
-    'National Medical Commission (NMC)',
-    'American Medical Association (AMA)',
-    'General Medical Council (GMC)',
-    'Royal College of Physicians',
-    'Other',
+  // ── Specialization (2-layer) ──────────────────────────────────────────────
+  final Set<String> _selectedCategories = {};
+  final Map<String, Set<String>> _selectedSubSpecs = {};
+
+  static const Map<String, List<String>> _categorySubSpecs = {
+    'Anxiety Issues': ['Panic attacks', 'Social anxiety', 'Overthinking', 'Phobias'],
+    'Depression & Mood': ['Major depression', 'Bipolar disorder', 'Seasonal depression', 'Persistent sadness'],
+    'Stress & Burnout': ['Work stress', 'Academic burnout', 'Caregiver fatigue', 'Chronic stress'],
+    'Relationships': ['Couple conflicts', 'Attachment issues', 'Trust issues', 'Communication gaps'],
+    'Career & Productivity': ['Career transitions', 'Imposter syndrome', 'Procrastination', 'Work-life balance'],
+    'Self-Development': ['Self-esteem', 'Confidence building', 'Motivation', 'Emotional intelligence'],
+    'Behavioral Issues': ['Anger management', 'Addiction', 'Compulsive behavior', 'Habit breaking'],
+    'Sleep Issues': ['Insomnia', 'Sleep anxiety', 'Irregular patterns', 'Nightmares'],
+    'Grief & Loss': ['Bereavement', 'Pet loss', 'Divorce grief', 'Anticipatory grief'],
+    'Identity & Personal Growth': ['Gender identity', 'Sexual orientation', 'Cultural identity', 'Life purpose'],
+    'Social Issues': ['Loneliness', 'Social withdrawal', 'Peer pressure', 'Bullying'],
+    'Thought Patterns': ['Negative thinking', 'Rumination', 'Catastrophizing', 'Perfectionism'],
+    'Lifestyle Issues': ['Body image', 'Eating habits', 'Screen addiction', 'Lifestyle changes'],
+    'Mild Clinical Conditions': ['OCD tendencies', 'Mild PTSD', 'Adjustment disorder', 'Somatization'],
+  };
+
+  // ── Therapy Approach ──────────────────────────────────────────────────────
+  final Set<String> _selectedApproaches = {};
+
+  static const Map<String, List<String>> _approachGroups = {
+    'Cognitive & Behavioral': ['CBT', 'DBT', 'REBT', 'Behavioral Therapy', 'Exposure Therapy'],
+    'Psychodynamic': ['Psychodynamic', 'Psychoanalytic'],
+    'Humanistic': ['Person-Centered', 'Gestalt', 'Existential'],
+    'Relationship': ['Couples Therapy', 'Marriage Counseling'],
+    'Mindfulness': ['ACT', 'MBCT'],
+    'Short-term': ['Solution-Focused'],
+    'Integrative': ['Integrative Therapy'],
+  };
+
+  // ── Government ID ─────────────────────────────────────────────────────────
+  String? _idFrontFileName;
+  String? _idBackFileName;
+
+  // ── Languages ─────────────────────────────────────────────────────────────
+  final List<String> _selectedLanguages = ['English'];
+  bool _showAllLanguages = false;
+
+  final List<String> _availableLanguages = [
+    'English', 'Hindi', 'Tamil', 'Telugu', 'Kannada', 'Malayalam',
+    'Marathi', 'Bengali', 'Gujarati', 'Punjabi', 'Urdu', 'Odia',
+    'Assamese', 'Sanskrit', 'French', 'Spanish', 'German', 'Arabic',
+    'Mandarin', 'Japanese',
   ];
+
+  // ── About You / Professional Bio ──────────────────────────────────────────
+  final _bioCtrl = TextEditingController();
 
   @override
   void dispose() {
-    _langCtrl.dispose();
-    _subSpecCtrl.dispose();
-    _regNumberCtrl.dispose();
+    _secondaryTitlesCtrl.dispose();
+    _bioCtrl.dispose();
     super.dispose();
   }
 
-  void _addLanguage(String lang) {
-    final trimmed = lang.trim().toUpperCase();
-    if (trimmed.isNotEmpty && !_languages.contains(trimmed)) {
-      setState(() {
-        _languages.add(trimmed);
-        _langCtrl.clear();
-      });
-    }
+  void _toggleLanguage(String lang) {
+    setState(() {
+      if (_selectedLanguages.contains(lang)) {
+        _selectedLanguages.remove(lang);
+      } else {
+        _selectedLanguages.add(lang);
+      }
+    });
+  }
+
+  void _toggleCategory(String cat) {
+    setState(() {
+      if (_selectedCategories.contains(cat)) {
+        _selectedCategories.remove(cat);
+        _selectedSubSpecs.remove(cat);
+      } else if (_selectedCategories.length < 5) {
+        _selectedCategories.add(cat);
+        _selectedSubSpecs[cat] = {};
+      }
+    });
+  }
+
+  void _toggleSubSpec(String cat, String sub) {
+    setState(() {
+      final subs = _selectedSubSpecs.putIfAbsent(cat, () => {});
+      if (subs.contains(sub)) {
+        subs.remove(sub);
+      } else if (subs.length < 5) {
+        subs.add(sub);
+      }
+    });
+  }
+
+  void _toggleApproach(String approach) {
+    setState(() {
+      if (_selectedApproaches.contains(approach)) {
+        _selectedApproaches.remove(approach);
+      } else {
+        _selectedApproaches.add(approach);
+      }
+    });
   }
 
   @override
@@ -99,7 +157,7 @@ class _ProfessionalDetailsState extends State<ProfessionalDetails> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Establish your clinical authority. This helps us verify\nyour credentials and match relevant patient cases.',
+                        'Tell us about your therapy expertise. This helps us\nverify your credentials and match patients to you.',
                         style: TextStyle(
                           fontSize: 14,
                           color: AppColors.mutedText,
@@ -108,123 +166,316 @@ class _ProfessionalDetailsState extends State<ProfessionalDetails> {
                       ),
                       const SizedBox(height: 20),
 
-                      // ── Specialization card ───────────────
+                      // ── 1. Professional Identity ─────────────────────────
+                      DoctorSectionCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _SectionDividerLabel(
+                              label: 'PROFESSIONAL IDENTITY',
+                              icon: Icons.badge_outlined,
+                            ),
+                            const SizedBox(height: 14),
+
+                            DoctorLabeledField(
+                              label: 'Primary Title *',
+                              field: DoctorDropdown(
+                                value: _primaryTitle,
+                                hint: 'Select your primary title',
+                                items: _primaryTitleOptions,
+                                onChanged: (v) => setState(() => _primaryTitle = v),
+                              ),
+                            ),
+
+                            const SizedBox(height: 8),
+                            DoctorLabeledField(
+                              label: 'Secondary Title (Optional)',
+                              field: DoctorUnderlineTextField(
+                                controller: _secondaryTitlesCtrl,
+                                hint: 'e.g. Counselor, Life Coach',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // ── 2. Specialization (2-layer) ────────────────────────
                       DoctorSectionCard(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             _SectionDividerLabel(
                               label: 'SPECIALIZATION',
-                              icon: Icons.medical_services_outlined,
+                              icon: Icons.psychology_outlined,
                             ),
                             const SizedBox(height: 14),
-
-                            DoctorLabeledField(
-                              label: 'Primary Specialization',
-                              field: DoctorDropdown(
-                                value: _selectedSpecialty,
-                                hint: 'Select Specialty',
-                                items: _specialties,
-                                onChanged: (v) =>
-                                    setState(() => _selectedSpecialty = v),
-                              ),
-                            ),
-
-                            DoctorLabeledField(
-                              label: 'Sub-Specialization  (optional)',
-                              field: DoctorUnderlineTextField(
-                                controller: _subSpecCtrl,
-                                hint: 'e.g. Interventional Cardiology',
-                              ),
-                            ),
+                            ..._categorySubSpecs.entries.map((e) {
+                              final cat = e.key;
+                              final subs = e.value;
+                              final isSel = _selectedCategories.contains(cat);
+                              return _CategoryCard(
+                                category: cat,
+                                subSpecs: subs,
+                                isSelected: isSel,
+                                selectedSubs: _selectedSubSpecs[cat] ?? {},
+                                onToggleCategory: () => _toggleCategory(cat),
+                                onToggleSub: (sub) => _toggleSubSpec(cat, sub),
+                                disabled: !isSel && _selectedCategories.length >= 5,
+                              );
+                            }),
                           ],
                         ),
                       ),
 
-                      // ── Licensing card ────────────────────
+                      // ── 3. Therapy Approach ────────────────────────────────
                       DoctorSectionCard(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             _SectionDividerLabel(
-                              label: 'MEDICAL LICENSING',
-                              icon: Icons.verified_outlined,
+                              label: 'THERAPY APPROACH',
+                              icon: Icons.auto_fix_high_outlined,
                             ),
                             const SizedBox(height: 14),
-
-                            DoctorLabeledField(
-                              label: 'Registration Number',
-                              field: DoctorUnderlineTextField(
-                                controller: _regNumberCtrl,
-                                hint: 'e.g. MCI-12345 / KA-MED-2041',
-                              ),
-                            ),
-
-                            DoctorLabeledField(
-                              label: 'Medical Council',
-                              field: DoctorDropdown(
-                                value: _selectedCouncil,
-                                hint: 'Select Council',
-                                items: _councils,
-                                onChanged: (v) =>
-                                    setState(() => _selectedCouncil = v),
-                              ),
-                            ),
+                            ..._approachGroups.entries.map((group) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    group.key,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.labelColor,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: group.value.map((a) {
+                                      final sel = _selectedApproaches.contains(a);
+                                      return GestureDetector(
+                                        onTap: () => _toggleApproach(a),
+                                        child: AnimatedContainer(
+                                          duration: const Duration(milliseconds: 200),
+                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                                          decoration: BoxDecoration(
+                                            color: sel ? AppColors.accentPurple.withValues(alpha: 0.10) : AppColors.inputBgLight,
+                                            borderRadius: BorderRadius.circular(20),
+                                            border: Border.all(
+                                              color: sel ? AppColors.accentPurple : AppColors.borderColor,
+                                              width: sel ? 1.5 : 1,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              if (sel) ...[
+                                                const Icon(Icons.check_circle, size: 14, color: AppColors.accentPurple),
+                                                const SizedBox(width: 6),
+                                              ],
+                                              Text(
+                                                a,
+                                                style: TextStyle(
+                                                  fontSize: 13,
+                                                  fontWeight: sel ? FontWeight.w600 : FontWeight.w400,
+                                                  color: sel ? AppColors.accentPurple : AppColors.darkText,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                  const SizedBox(height: 16),
+                                ],
+                              );
+                            }),
                           ],
                         ),
                       ),
 
-                      // ── Experience + Languages ────────────
+                      // ── 4. Languages ──────────────────────────────────────
                       DoctorSectionCard(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             _SectionDividerLabel(
-                              label: 'EXPERIENCE & LANGUAGES',
-                              icon: Icons.workspace_premium_outlined,
+                              label: 'LANGUAGES SPOKEN',
+                              icon: Icons.translate_outlined,
                             ),
                             const SizedBox(height: 14),
 
-                            DoctorFieldLabel('Years of Experience'),
+                            DoctorFieldLabel('Select Languages'),
                             const SizedBox(height: 8),
-                            _ExperienceStepper(
-                              value: _yearsOfExperience,
-                              onDecrement: () {
-                                if (_yearsOfExperience > 0) {
-                                  setState(() => _yearsOfExperience--);
-                                }
+                            _LanguageChipSelector(
+                              availableLanguages: _availableLanguages,
+                              selectedLanguages: _selectedLanguages,
+                              onToggle: _toggleLanguage,
+                              expanded: _showAllLanguages,
+                              onToggleExpand: () => setState(
+                                () => _showAllLanguages = !_showAllLanguages,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // ── 5. About You / Professional Bio ───────────────────
+                      DoctorSectionCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _SectionDividerLabel(
+                              label: 'ABOUT YOU / PROFESSIONAL BIO',
+                              icon: Icons.person_outline,
+                            ),
+                            const SizedBox(height: 14),
+
+                            DoctorLabeledField(
+                              label: 'Professional Bio (Optional)',
+                              field: Container(
+                                decoration: BoxDecoration(
+                                  color: AppColors.inputBgLight,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: AppColors.borderColor),
+                                ),
+                                child: TextField(
+                                  controller: _bioCtrl,
+                                  maxLines: 5,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: AppColors.darkText,
+                                  ),
+                                  decoration: const InputDecoration(
+                                    hintText:
+                                        'e.g. I am a licensed clinical psychologist with 8+ years of experience helping individuals with anxiety, depression, and relationship challenges. My approach is warm, evidence-based, and tailored to each client\'s unique needs...',
+                                    hintStyle: TextStyle(
+                                      fontSize: 13,
+                                      color: AppColors.hintColor,
+                                    ),
+                                    border: InputBorder.none,
+                                    contentPadding: EdgeInsets.all(12),
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 8),
+
+                            // ── Character count hint ────────────────────────
+                            ValueListenableBuilder<TextEditingValue>(
+                              valueListenable: _bioCtrl,
+                              builder: (_, value, __) {
+                                final count = value.text.length;
+                                final color = count > 600
+                                    ? const Color(0xFFDC2626)
+                                    : AppColors.mutedText;
+                                return Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text(
+                                      'This will be visible to clients on your profile.',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: AppColors.mutedText,
+                                      ),
+                                    ),
+                                    Text(
+                                      '$count / 600',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: color,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                );
                               },
-                              onIncrement: () =>
-                                  setState(() => _yearsOfExperience++),
-                            ),
-                            const SizedBox(height: 20),
-
-                            DoctorFieldLabel('Languages Spoken'),
-                            const SizedBox(height: 8),
-                            _LanguagesField(
-                              controller: _langCtrl,
-                              languages: _languages,
-                              onSubmit: _addLanguage,
-                              onRemove: (lang) =>
-                                  setState(() => _languages.remove(lang)),
                             ),
                           ],
                         ),
                       ),
 
-                      // ── Info banner ───────────────────────
+                      // ── Government ID ──────────────────────
+                      DoctorSectionCard(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.badge_outlined, size: 16, color: AppColors.primaryColor),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'GOVERNMENT-ISSUED ID',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primaryColor,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(child: Container(height: 1, color: AppColors.borderColor)),
+                                const SizedBox(width: 10),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFEF2F2),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text(
+                                    'Required',
+                                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFFDC2626)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            const Text(
+                              "Upload a clear photo of your Passport, Aadhar Card, or Driver's License. Ensure all text is legible.",
+                              style: TextStyle(fontSize: 13, color: AppColors.labelColor, height: 1.5),
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: DoctorUploadBox(
+                                    label: 'Front Side',
+                                    subtitle: 'JPG, PNG or PDF',
+                                    fileName: _idFrontFileName,
+                                    onTap: () {},
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: DoctorUploadBox(
+                                    label: 'Back Side',
+                                    subtitle: 'JPG, PNG or PDF',
+                                    fileName: _idBackFileName,
+                                    onTap: () {},
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // ── Info banner ───────────────────────────────────────
                       DoctorInfoBanner.blue(
                         title: 'WHY WE NEED THIS?',
                         description:
-                            'Regulatory compliance requires us to maintain verified records of all practicing clinicians on the Sanctuary platform.',
+                            'Regulatory compliance requires us to maintain verified records of all practicing therapists on the Sanctuary platform.',
                         icon: Icons.shield_outlined,
                       ),
-
                       const SizedBox(height: 16),
 
-                      // ── Verification badge ────────────────
+                      // ── Verification badge ────────────────────────────────
                       const _VerificationBadgeSection(),
-
                       const SizedBox(height: 24),
                     ],
                   ),
@@ -247,7 +498,135 @@ class _ProfessionalDetailsState extends State<ProfessionalDetails> {
   }
 }
 
-// ── Private sub-widgets ───────────────────────────────────────────────────────
+// ── Category card (expandable 2-layer) ───────────────────────────────────────
+
+class _CategoryCard extends StatelessWidget {
+  final String category;
+  final List<String> subSpecs;
+  final bool isSelected;
+  final Set<String> selectedSubs;
+  final VoidCallback onToggleCategory;
+  final ValueChanged<String> onToggleSub;
+  final bool disabled;
+
+  const _CategoryCard({
+    required this.category,
+    required this.subSpecs,
+    required this.isSelected,
+    required this.selectedSubs,
+    required this.onToggleCategory,
+    required this.onToggleSub,
+    this.disabled = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.primaryColor.withValues(alpha: 0.04)
+              : AppColors.cardColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? AppColors.primaryColor : AppColors.borderColor,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            GestureDetector(
+              onTap: disabled ? null : onToggleCategory,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                child: Row(
+                  children: [
+                    Icon(
+                      isSelected ? Icons.check_box : Icons.check_box_outline_blank,
+                      size: 20,
+                      color: isSelected
+                          ? AppColors.primaryColor
+                          : (disabled ? AppColors.hintColor : AppColors.mutedText),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        category,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          color: disabled
+                              ? AppColors.hintColor
+                              : (isSelected ? AppColors.primaryColor : AppColors.darkText),
+                        ),
+                      ),
+                    ),
+                    if (isSelected)
+                      Icon(Icons.keyboard_arrow_up, size: 20, color: AppColors.primaryColor)
+                    else if (!disabled)
+                      const Icon(Icons.keyboard_arrow_down, size: 20, color: AppColors.mutedText),
+                  ],
+                ),
+              ),
+            ),
+            if (isSelected) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(height: 1, color: AppColors.borderColor),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Select sub-specializations (${selectedSubs.length}/5)',
+                      style: const TextStyle(fontSize: 11, color: AppColors.labelColor),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: subSpecs.map((sub) {
+                        final sel = selectedSubs.contains(sub);
+                        return GestureDetector(
+                          onTap: () => onToggleSub(sub),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: sel
+                                  ? AppColors.accentTeal.withValues(alpha: 0.10)
+                                  : AppColors.inputBgLight,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: sel ? AppColors.accentTeal : AppColors.borderColor,
+                              ),
+                            ),
+                            child: Text(
+                              sub,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: sel ? FontWeight.w600 : FontWeight.w400,
+                                color: sel ? AppColors.accentTeal : AppColors.darkText,
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Shared Private sub-widgets ────────────────────────────────────────────────
 
 class _SectionDividerLabel extends StatelessWidget {
   final String label;
@@ -277,197 +656,100 @@ class _SectionDividerLabel extends StatelessWidget {
   }
 }
 
-class _ExperienceStepper extends StatelessWidget {
-  final int value;
-  final VoidCallback onDecrement;
-  final VoidCallback onIncrement;
+class _LanguageChipSelector extends StatelessWidget {
+  final List<String> availableLanguages;
+  final List<String> selectedLanguages;
+  final ValueChanged<String> onToggle;
+  final bool expanded;
+  final VoidCallback onToggleExpand;
 
-  const _ExperienceStepper({
-    required this.value,
-    required this.onDecrement,
-    required this.onIncrement,
+  static const int _collapsedCount = 9;
+
+  const _LanguageChipSelector({
+    required this.availableLanguages,
+    required this.selectedLanguages,
+    required this.onToggle,
+    required this.expanded,
+    required this.onToggleExpand,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEEF2FF),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: [
-          _StepBtn(icon: Icons.remove, onTap: onDecrement),
-          Expanded(
-            child: Column(
-              children: [
-                Text(
-                  '$value',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.darkText,
+    final visibleLanguages = expanded
+        ? availableLanguages
+        : availableLanguages.take(_collapsedCount).toList();
+    final hasMore = availableLanguages.length > _collapsedCount;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 10,
+          children: visibleLanguages.map((lang) {
+            final isSelected = selectedLanguages.contains(lang);
+            return GestureDetector(
+              onTap: () => onToggle(lang),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? AppColors.primaryColor.withValues(alpha: 0.12)
+                      : AppColors.inputBgLight,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isSelected ? AppColors.primaryColor : AppColors.borderColor,
+                    width: isSelected ? 1.5 : 1,
                   ),
                 ),
-                const Text(
-                  'years',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppColors.labelColor,
-                    fontWeight: FontWeight.w500,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isSelected) ...[
+                      const Icon(Icons.check_circle, size: 14, color: AppColors.primaryColor),
+                      const SizedBox(width: 6),
+                    ],
+                    Text(
+                      lang,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                        color: isSelected ? AppColors.primaryColor : AppColors.darkText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        if (hasMore) ...[
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: onToggleExpand,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  expanded ? 'See Less' : 'See More',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primaryColor,
                   ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                  size: 18,
+                  color: AppColors.primaryColor,
                 ),
               ],
             ),
           ),
-          _StepBtn(icon: Icons.add, onTap: onIncrement),
         ],
-      ),
-    );
-  }
-}
-
-class _StepBtn extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _StepBtn({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          color: AppColors.primaryColor.withValues(alpha: 0.12),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(icon, size: 18, color: AppColors.primaryColor),
-      ),
-    );
-  }
-}
-
-class _LanguagesField extends StatelessWidget {
-  final TextEditingController controller;
-  final List<String> languages;
-  final ValueChanged<String> onSubmit;
-  final ValueChanged<String> onRemove;
-
-  const _LanguagesField({
-    required this.controller,
-    required this.languages,
-    required this.onSubmit,
-    required this.onRemove,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: DoctorUnderlineTextField(
-                controller: controller,
-                hint: 'Type a language and press Add...',
-              ),
-            ),
-            const SizedBox(width: 10),
-            GestureDetector(
-              onTap: () => onSubmit(controller.text),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryColor,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Text(
-                  'Add',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        if (languages.isNotEmpty)
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: languages
-                .map(
-                  (lang) => _LanguageChip(
-                    label: lang,
-                    onRemove: () => onRemove(lang),
-                  ),
-                )
-                .toList(),
-          ),
       ],
-    );
-  }
-}
-
-class _LanguageChip extends StatelessWidget {
-  final String label;
-  final VoidCallback onRemove;
-
-  const _LanguageChip({required this.label, required this.onRemove});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEEF2FF),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.primaryColor.withValues(alpha: 0.25),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppColors.primaryColor,
-            ),
-          ),
-          const SizedBox(width: 6),
-          GestureDetector(
-            onTap: onRemove,
-            child: Container(
-              width: 16,
-              height: 16,
-              decoration: BoxDecoration(
-                color: AppColors.primaryColor.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.close,
-                size: 10,
-                color: AppColors.primaryColor,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -493,11 +775,7 @@ class _VerificationBadgeSection extends StatelessWidget {
               color: AppColors.primaryColor.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.verified_outlined,
-              size: 30,
-              color: Colors.white,
-            ),
+            child: const Icon(Icons.verified_outlined, size: 30, color: Colors.white),
           ),
           const SizedBox(width: 16),
           const Expanded(
@@ -516,20 +794,12 @@ class _VerificationBadgeSection extends StatelessWidget {
                 SizedBox(height: 4),
                 Text(
                   'Clinical Sanctuary Trust Badge',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
                 ),
                 SizedBox(height: 2),
                 Text(
                   'Complete all steps to earn your verified badge.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF94A3B8),
-                    height: 1.4,
-                  ),
+                  style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8), height: 1.4),
                 ),
               ],
             ),

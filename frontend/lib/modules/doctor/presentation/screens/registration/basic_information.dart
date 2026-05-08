@@ -24,11 +24,6 @@ class _BasicInformationState extends State<BasicInformation> {
   final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
-  final _streetCtrl = TextEditingController();
-  final _cityCtrl = TextEditingController();
-  final _stateCtrl = TextEditingController();
-  final _countryCtrl = TextEditingController();
-  final _pincodeCtrl = TextEditingController();
 
   String? _selectedGender;
   DateTime? _selectedDate;
@@ -48,11 +43,6 @@ class _BasicInformationState extends State<BasicInformation> {
     _nameCtrl.dispose();
     _emailCtrl.dispose();
     _phoneCtrl.dispose();
-    _streetCtrl.dispose();
-    _cityCtrl.dispose();
-    _stateCtrl.dispose();
-    _countryCtrl.dispose();
-    _pincodeCtrl.dispose();
     super.dispose();
   }
 
@@ -222,85 +212,6 @@ class _BasicInformationState extends State<BasicInformation> {
                           ],
                         ),
                       ),
-
-                      // ── Professional Address ──────────────
-                      DoctorSectionCard(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const DoctorSectionHeader(
-                              icon: Icons.location_on_outlined,
-                              title: 'Clinic / Personal Address',
-                              iconColor: AppColors.accentGreen,
-                            ),
-
-                            DoctorLabeledField(
-                              label: 'Street Address',
-                              field: DoctorTextField(
-                                controller: _streetCtrl,
-                                hint: '123 Medical Street, Suite 400',
-                                fillColor: AppColors.inputBgLight,
-                                validator: _requiredValidator,
-                              ),
-                            ),
-
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: DoctorLabeledField(
-                                    label: 'City',
-                                    field: DoctorTextField(
-                                      controller: _cityCtrl,
-                                      hint: 'Bangalore',
-                                      fillColor: AppColors.inputBgLight,
-                                      validator: _requiredValidator,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: DoctorLabeledField(
-                                    label: 'State',
-                                    field: DoctorTextField(
-                                      controller: _stateCtrl,
-                                      hint: 'Karnataka',
-                                      fillColor: AppColors.inputBgLight,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: DoctorLabeledField(
-                                    label: 'Country',
-                                    field: DoctorTextField(
-                                      controller: _countryCtrl,
-                                      hint: 'India',
-                                      fillColor: AppColors.inputBgLight,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: DoctorLabeledField(
-                                    label: 'Pincode',
-                                    field: DoctorTextField(
-                                      controller: _pincodeCtrl,
-                                      hint: '560001',
-                                      keyboardType: TextInputType.number,
-                                      fillColor: AppColors.inputBgLight,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-
                       const SizedBox(height: 8),
                     ],
                   ),

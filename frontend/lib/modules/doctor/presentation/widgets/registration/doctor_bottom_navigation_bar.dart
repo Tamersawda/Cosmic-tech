@@ -23,8 +23,10 @@ class DoctorBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + bottomInset),
       decoration: BoxDecoration(
         color: AppColors.cardColor,
         boxShadow: [

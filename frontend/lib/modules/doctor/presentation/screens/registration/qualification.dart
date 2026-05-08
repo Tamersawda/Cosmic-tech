@@ -1,4 +1,4 @@
-import 'package:frontend/modules/doctor/presentation/screens/registration/identity_verification_page.dart';
+import 'package:frontend/modules/doctor/presentation/screens/registration/professional_registration.dart';
 import 'package:frontend/modules/doctor/presentation/widgets/registration/doctor_app_top_bar.dart';
 import 'package:frontend/modules/doctor/presentation/widgets/registration/doctor_bottom_navigation_bar.dart';
 import 'package:frontend/modules/doctor/presentation/widgets/registration/doctor_info_banner.dart';
@@ -13,13 +13,12 @@ import 'package:frontend/modules/doctor/presentation/router/onboarding_page_rout
 // ── Local entry model ─────────────────────────────────────────────────────────
 
 class _QualEntry {
-  final String type; // 'UG' | 'PG' | 'Additional'
   final TextEditingController degree = TextEditingController();
   final TextEditingController institution = TextEditingController();
   final TextEditingController year = TextEditingController();
   String? fileName;
 
-  _QualEntry({required this.type});
+  _QualEntry();
 
   void dispose() {
     degree.dispose();
@@ -38,38 +37,23 @@ class Qualifications extends StatefulWidget {
 }
 
 class _QualificationsState extends State<Qualifications> {
-  // UG — exactly one, fixed, cannot be removed
-  final _ugEntry = _QualEntry(type: 'UG');
-
   // PG — starts with one, more can be added
-  final List<_QualEntry> _pgEntries = [_QualEntry(type: 'PG')];
-
-  // Additional — optional, starts empty
-  final List<_QualEntry> _additionalEntries = [];
+  final List<_QualEntry> _pgEntries = [_QualEntry()];
 
   @override
   void dispose() {
-    _ugEntry.dispose();
-    for (final e in [..._pgEntries, ..._additionalEntries]) {
+    for (final e in _pgEntries) {
       e.dispose();
     }
     super.dispose();
   }
 
-  void _addPg() => setState(() => _pgEntries.add(_QualEntry(type: 'PG')));
+  void _addPg() => setState(() => _pgEntries.add(_QualEntry()));
 
   void _removePg(int i) {
     if (_pgEntries.length <= 1) return; // keep at least one
     _pgEntries[i].dispose();
     setState(() => _pgEntries.removeAt(i));
-  }
-
-  void _addAdditional() =>
-      setState(() => _additionalEntries.add(_QualEntry(type: 'Additional')));
-
-  void _removeAdditional(int i) {
-    _additionalEntries[i].dispose();
-    setState(() => _additionalEntries.removeAt(i));
   }
 
   // ── Build helpers ─────────────────────────────────────────────────────────
@@ -271,22 +255,6 @@ class _QualificationsState extends State<Qualifications> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ── UG Section ──────────────────────────
-                    _buildSectionLabel(
-                      'UG',
-                      const Color(0xFF0891B2),
-                      'Undergraduate Degree  (e.g. MBBS, BDS, BHMS)',
-                    ),
-
-                    _buildCard(
-                      entry: _ugEntry,
-                      accentColor: const Color(0xFF0891B2),
-                      degreeHint: 'e.g. MBBS, BDS, BHMS',
-                      institutionHint: 'e.g. Bangalore Medical College',
-                    ),
-
-                    const SizedBox(height: 8),
-
                     // ── PG Section ──────────────────────────
                     _buildSectionLabel(
                       'PG',
@@ -307,61 +275,7 @@ class _QualificationsState extends State<Qualifications> {
                       ),
                     ),
 
-                    _addButton('Add Another PG Qualification', _addPg),
-
-                    // ── Additional Section ──────────────────
-                    _buildSectionLabel(
-                      'Additional',
-                      const Color(0xFF16A34A),
-                      'Fellowship, Diploma, Certification  (optional)',
-                    ),
-
-                    if (_additionalEntries.isEmpty)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 20),
-                        margin: const EdgeInsets.only(bottom: 16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF0FDF4),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFFBBF7D0)),
-                        ),
-                        child: const Column(
-                          children: [
-                            Icon(
-                              Icons.add_circle_outline,
-                              size: 28,
-                              color: Color(0xFF16A34A),
-                            ),
-                            SizedBox(height: 6),
-                            Text(
-                              'No additional certifications added',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF16A34A),
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                    else
-                      ...List.generate(
-                        _additionalEntries.length,
-                        (i) => _buildCard(
-                          entry: _additionalEntries[i],
-                          accentColor: const Color(0xFF16A34A),
-                          degreeHint: 'e.g. Fellowship in Cardiology, PGDCC',
-                          institutionHint: 'e.g. Apollo Hospital, NHI',
-                          trailingAction: _removeButton(
-                            () => _removeAdditional(i),
-                          ),
-                        ),
-                      ),
-
-                    _addButton(
-                      'Add Fellowship / Certification',
-                      _addAdditional,
-                    ),
+                    _addButton('Add Another Qualification', _addPg),
 
                     // ── Tip banner ──────────────────────────
                     DoctorInfoBanner.teal(

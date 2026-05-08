@@ -10,7 +10,7 @@ class DoctorOnboardingProgress extends StatelessWidget {
   const DoctorOnboardingProgress({
     super.key,
     required this.currentStep,
-    this.totalSteps = 5,
+    this.totalSteps = 6,
     required this.stepTitle,
     this.subtitle,
   });
