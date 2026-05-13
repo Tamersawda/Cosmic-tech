@@ -63,7 +63,9 @@
             "pm.test('Has token', () => pm.expect(d.data.token).to.be.a('string'));",
             "pm.test('Has role', () => pm.expect(d.data.role).to.be.a('string'));",
             "pm.test('No userType field', () => pm.expect(d.data.userType).to.be.undefined);",
-            "pm.test('No fullName field', () => pm.expect(d.data.fullName).to.be.undefined);"
+            "pm.test('No fullName field', () => pm.expect(d.data.fullName).to.be.undefined);",
+            "pm.test('Has Is_profile_complete', () => pm.expect(d.data.Is_profile_complete).to.be.a('boolean'));",
+            "pm.test('Has Is_profile_approved', () => pm.expect(d.data.Is_profile_approved).to.be.a('boolean'));"
           ], "type": "text/javascript" }}],
           "request": {
             "method": "POST",
@@ -79,7 +81,8 @@
             "const d = pm.response.json();",
             "pm.test('Has userId', () => pm.expect(d.data.userId).to.be.a('string'));",
             "pm.test('Has name', () => pm.expect(d.data.name).to.be.a('string'));",
-            "pm.test('Has role', () => pm.expect(d.data.role).to.be.a('string'));"
+            "pm.test('Has role', () => pm.expect(d.data.role).to.be.a('string'));",
+            "pm.test('Has Is_profile_complete', () => pm.expect(d.data.Is_profile_complete).to.be.a('boolean'));"
           ], "type": "text/javascript" }}],
           "request": {
             "method": "GET",
@@ -147,6 +150,7 @@
                 { "key": "yearsOfExperience", "value": "10", "type": "text" },
                 { "key": "licenseNumber", "value": "LIC-99001", "type": "text" },
                 { "key": "languagesSpoken", "value": "[\"English\"]", "type": "text" },
+                { "key": "therapyTypes", "value": "[\"individual\", \"couple\"]", "type": "text" },
                 { "key": "videoEnabled", "value": "true", "type": "text" },
                 { "key": "videoRate", "value": "120", "type": "text" },
                 { "key": "consultationDuration", "value": "60min", "type": "text" },
@@ -203,10 +207,9 @@
             "body": {
               "mode": "formdata",
               "formdata": [
-                { "key": "title", "value": "MBBS", "type": "text" },
-                { "key": "degree", "value": "Bachelor of Medicine", "type": "text" },
-                { "key": "institution", "value": "Harvard Medical School", "type": "text" },
-                { "key": "year", "value": "2010", "type": "text" },
+                { "key": "degree", "value": "MBBS", "type": "text" },
+                { "key": "instituteName", "value": "Harvard Medical School", "type": "text" },
+                { "key": "yearOfCompletion", "value": "2010", "type": "text" },
                 { "key": "document", "type": "file", "src": "" }
               ]
             },
@@ -231,7 +234,7 @@
           "request": {
             "method": "PUT",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }, { "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"title\": \"MBBS (Updated)\",\n  \"institution\": \"Johns Hopkins\",\n  \"year\": 2011\n}", "options": { "raw": { "language": "json" } } },
+            "body": { "mode": "raw", "raw": "{\n  \"degree\": \"Doctor of Medicine\",\n  \"instituteName\": \"Johns Hopkins\",\n  \"yearOfCompletion\": 2011\n}", "options": { "raw": { "language": "json" } } },
             "url": { "raw": "{{baseUrl}}/api/doctors/{{doctorId}}/qualifications/{{qualId}}", "host": ["{{baseUrl}}"], "path": ["api","doctors","{{doctorId}}","qualifications","{{qualId}}"] }
           }
         },
@@ -388,7 +391,9 @@
           "event": [{ "listen": "test", "script": { "exec": [
             "pm.test('200 OK', () => pm.response.to.have.status(200));",
             "const d = pm.response.json();",
-            "pm.test('Has doctors array', () => pm.expect(d.data.doctors).to.be.an('array'));"
+            "pm.test('Has doctors array', () => pm.expect(d.data.doctors).to.be.an('array'));",
+            "pm.test('Doctors have isProfileApproved', () => pm.expect(d.data.doctors[0].isProfileApproved).to.be.a('boolean'));",
+            "pm.test('Doctors have isProfileComplete', () => pm.expect(d.data.doctors[0].isProfileComplete).to.be.a('boolean'));"
           ], "type": "text/javascript" }}],
           "request": {
             "method": "GET",

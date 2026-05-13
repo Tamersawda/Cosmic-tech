@@ -127,7 +127,8 @@ class DoctorProfileController
             'state'                => ['string'],
             'country'              => ['string'],
             'postalCode'           => ['string'],
-            'subSpecializations'   => ['array']
+            'subSpecializations'   => ['array'],
+            'therapyTypes'         => ['array']
         ]);
 
         if (!$validation['valid']) {
@@ -144,6 +145,7 @@ class DoctorProfileController
             'profilePhotoUrl'      => $profilePhotoUrl, // Fixed mapping for setupProfile
             'primarySpecialty'     => $input['primarySpecialty'],
             'subSpecializations'   => $input['subSpecializations'] ?? [],
+            'therapyTypes'         => $input['therapyTypes'] ?? [],
             'yearsOfExperience'    => $input['yearsOfExperience'],
             'licenseNumber'        => $input['licenseNumber'],
             'languagesSpoken'      => $input['languagesSpoken'],
@@ -173,6 +175,7 @@ class DoctorProfileController
                 'profile_photo_url'   => $profilePhotoUrl,
                 'primary_specialty'   => $data['primarySpecialty'],
                 'sub_specializations' => json_encode($data['subSpecializations']),
+                'therapy_types'       => json_encode($data['therapyTypes']),
                 'years_of_experience' => $data['yearsOfExperience'],
                 'license_number'      => $data['licenseNumber'],
                 'languages_spoken'    => json_encode($data['languagesSpoken']),
@@ -195,6 +198,11 @@ class DoctorProfileController
             Response::error("Failed to save doctor profile", 500);
             return;
         }
+
+        // ✅ Mark profile as complete in users table
+        $db = \Backend\Config\Database::getInstance();
+        $db->prepare('UPDATE users SET is_profile_complete = 1, onboarding_step = 4 WHERE id = ?')
+           ->execute([$userId]);
 
         Response::success([
             'message' => "Doctor profile created successfully",
@@ -228,6 +236,7 @@ class DoctorProfileController
         // Decode JSON fields
         $profile['languagesSpoken'] = is_string($profile['languages_spoken']) ? json_decode($profile['languages_spoken'], true) : [];
         $profile['subSpecializations'] = is_string($profile['sub_specializations']) ? json_decode($profile['sub_specializations'], true) : [];
+        $profile['therapyTypes'] = is_string($profile['therapy_types']) ? json_decode($profile['therapy_types'], true) : [];
 
         // Map internal snake_case to camelCase for API
         $profile['primarySpecialty'] = $profile['primary_specialty'];

@@ -19,7 +19,7 @@ class User {
         $stmt = $this->db->prepare('
             SELECT id, email, password, user_type, full_name,
                    is_active, is_email_verified, created_at, updated_at,
-                   is_profile_completed, onboarding_step
+                   is_profile_complete, is_profile_approved, onboarding_step
             FROM users
             WHERE email = ?
             LIMIT 1
@@ -40,7 +40,7 @@ class User {
         $stmt = $this->db->prepare('
             SELECT id, email, user_type, full_name,
                    is_active, is_email_verified, created_at, updated_at,
-                   is_profile_completed, onboarding_step
+                   is_profile_complete, is_profile_approved, onboarding_step
             FROM users
             WHERE id = ?
             LIMIT 1
@@ -147,7 +147,7 @@ class User {
                    is_active, is_email_verified,
                    email_verification_otp, email_verification_expires,
                    created_at, updated_at,
-                   is_profile_completed, onboarding_step
+                   is_profile_complete, is_profile_approved, onboarding_step
             FROM users
             WHERE email = ?
             LIMIT 1

@@ -35,6 +35,9 @@ class DoctorProfile {
             if ($result['sub_specializations']) {
                 $result['sub_specializations'] = json_decode($result['sub_specializations'], true);
             }
+            if ($result['therapy_types']) {
+                $result['therapy_types'] = json_decode($result['therapy_types'], true);
+            }
         }
 
         return $result ?: null;
@@ -78,12 +81,12 @@ class DoctorProfile {
         $stmt = $this->db->prepare('
             INSERT INTO doctor_profiles (
                 user_id, gender, date_of_birth, phone_number, profile_photo_url,
-                primary_specialty, sub_specializations, years_of_experience,
+                primary_specialty, sub_specializations, therapy_types, years_of_experience,
                 license_number, medical_council, languages_spoken,
                 video_enabled, video_rate, audio_enabled, audio_rate,
                 consultation_duration, buffer_time, is_active, street_address,
                 city, state, country, postal_code, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP())
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP())
         ');
 
         try {
@@ -95,6 +98,7 @@ class DoctorProfile {
                 $data['profile_photo_url'] ?? null,
                 $data['primary_specialty'] ?? null,
                 $data['sub_specializations'] ?? '[]',
+                $data['therapy_types'] ?? '[]',
                 $data['years_of_experience'] ?? 0,
                 $data['license_number'] ?? null,
                 $data['medical_council'] ?? null,
@@ -128,6 +132,7 @@ class DoctorProfile {
                 profile_photo_url     = ?,
                 primary_specialty     = ?,
                 sub_specializations   = ?,
+                therapy_types         = ?,
                 years_of_experience   = ?,
                 license_number        = ?,
                 languages_spoken      = ?,
@@ -152,6 +157,7 @@ class DoctorProfile {
                 $data['profilePhotoUrl']     ?? null,
                 $data['primarySpecialty']    ?? null,
                 json_encode($data['subSpecializations'] ?? []),
+                json_encode($data['therapyTypes'] ?? []),
                 $data['yearsOfExperience']   ?? 0,
                 $data['licenseNumber']       ?? null,
                 json_encode($data['languagesSpoken'] ?? ['English']),
@@ -367,12 +373,32 @@ class DoctorProfile {
      * Verify or reject a doctor.
      */
     public function verifyDoctor(string $userId, string $status): bool {
-        $isVerified = ($status === 'approved') ? 1 : 0;
-        $stmt = $this->db->prepare('
-            UPDATE doctor_profiles
-            SET verification_status = ?, is_verified = ?, updated_at = UTC_TIMESTAMP()
-            WHERE user_id = ?
-        ');
-        return $stmt->execute([$status, $isVerified, $userId]);
+        $isApproved = ($status === 'approved') ? 1 : 0;
+        
+        $this->db->beginTransaction();
+        try {
+            // Update doctor_profiles
+            $stmt1 = $this->db->prepare('
+                UPDATE doctor_profiles
+                SET verification_status = ?, is_verified = ?, is_profile_approved = ?, updated_at = UTC_TIMESTAMP()
+                WHERE user_id = ?
+            ');
+            $stmt1->execute([$status, $isApproved, $isApproved, $userId]);
+
+            // Sync with users table
+            $stmt2 = $this->db->prepare('
+                UPDATE users
+                SET is_profile_approved = ?
+                WHERE id = ?
+            ');
+            $stmt2->execute([$isApproved, $userId]);
+
+            $this->db->commit();
+            return true;
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            error_log('Verify doctor error: ' . $e->getMessage());
+            return false;
+        }
     }
 }

@@ -127,7 +127,8 @@ class AdminController {
                     dp.primary_specialty  AS primarySpecialty,
                     dp.years_of_experience AS yearsOfExperience,
                     dp.license_number AS licenseNumber,
-                    dp.is_verified    AS isVerified,
+                    dp.is_profile_approved AS isProfileApproved,
+                    u.is_profile_complete AS isProfileComplete,
                     dp.is_active      AS isActive,
                     dp.verification_status AS verificationStatus,
                     dp.profile_photo_url   AS profilePhotoUrl,
@@ -141,8 +142,9 @@ class AdminController {
 
             // Cast booleans
             foreach ($doctors as &$d) {
-                $d['isVerified'] = (bool)$d['isVerified'];
-                $d['isActive']   = (bool)$d['isActive'];
+                $d['isProfileApproved'] = (bool)$d['isProfileApproved'];
+                $d['isProfileComplete'] = (bool)$d['isProfileComplete'];
+                $d['isActive']          = (bool)$d['isActive'];
             }
             unset($d);
 

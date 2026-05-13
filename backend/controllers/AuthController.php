@@ -145,17 +145,17 @@ class AuthController {
             }
 
             // ── Runtime integrity check for clients ──
-            if ($role === 'client' && (bool)$user['is_profile_completed']) {
+            if ($role === 'client' && (bool)$user['is_profile_complete']) {
                 $db = \Backend\Config\Database::getInstance();
                 $chk = $db->prepare('SELECT full_name, phone_number FROM client_profiles WHERE user_id = ? LIMIT 1');
                 $chk->execute([$user['id']]);
                 $profile = $chk->fetch(\PDO::FETCH_ASSOC);
 
                 if (!$profile || empty($profile['full_name']) || empty($profile['phone_number'])) {
-                    $db->prepare('UPDATE users SET is_profile_completed = 0, onboarding_step = 1 WHERE id = ?')
+                    $db->prepare('UPDATE users SET is_profile_complete = 0, onboarding_step = 1 WHERE id = ?')
                        ->execute([$user['id']]);
-                    $user['is_profile_completed'] = 0;
-                    $user['onboarding_step']       = 1;
+                    $user['is_profile_complete'] = 0;
+                    $user['onboarding_step']     = 1;
                 }
             }
 
@@ -169,7 +169,8 @@ class AuthController {
                     $role,
                     $token,
                     $refreshToken,
-                    (bool)$user['is_profile_completed'],
+                    (bool)$user['is_profile_complete'],
+                    (bool)$user['is_profile_approved'],
                     (int)$user['onboarding_step']
                 ),
                 'Login successful'
@@ -246,7 +247,8 @@ class AuthController {
         string $role,
         string $token,
         string $refreshToken,
-        bool   $isProfileCompleted,
+        bool   $isProfileComplete,
+        bool   $isProfileApproved,
         int    $onboardingStep
     ): array {
         return [
@@ -256,8 +258,12 @@ class AuthController {
             'role'               => $role,
             'token'              => $token,
             'refreshToken'       => $refreshToken,
-            'isProfileCompleted' => $isProfileCompleted,
+            'isProfileComplete'  => $isProfileComplete,
+            'isProfileApproved'  => $isProfileApproved,
             'onboardingStep'     => $onboardingStep,
+            // Aliases for the exact names requested by user
+            'Is_profile_complete' => $isProfileComplete,
+            'Is_profile_approved' => $isProfileApproved,
         ];
     }
 

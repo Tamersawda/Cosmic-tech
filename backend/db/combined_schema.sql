@@ -67,7 +67,8 @@ CREATE TABLE users (
     full_name                   VARCHAR(255)    NOT NULL DEFAULT '',
     user_type                   ENUM('admin', 'doctor', 'client') NOT NULL,
     is_active                   TINYINT(1)      NOT NULL DEFAULT 1,
-    is_profile_completed        BOOLEAN         DEFAULT FALSE,
+    is_profile_complete         BOOLEAN         DEFAULT FALSE,
+    is_profile_approved         BOOLEAN         DEFAULT FALSE,
     onboarding_step             INT             DEFAULT 0,
 
     -- Reserved for future OTP email-verification flow (not active in MVP)
@@ -112,6 +113,7 @@ CREATE TABLE doctor_profiles (
 
     primary_specialty           VARCHAR(150)    NOT NULL DEFAULT '',
     sub_specializations         JSON            NULL,
+    therapy_types               JSON            NULL,
     years_of_experience         SMALLINT        NOT NULL DEFAULT 0,
     license_number              VARCHAR(100)    NOT NULL DEFAULT '',
     medical_council             VARCHAR(100)    NOT NULL DEFAULT '',
@@ -135,6 +137,7 @@ CREATE TABLE doctor_profiles (
     longitude                   DECIMAL(10,7)   NULL,
 
     is_verified                 TINYINT(1)      NOT NULL DEFAULT 0,
+    is_profile_approved         BOOLEAN         NOT NULL DEFAULT FALSE,
     verification_status         ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
     trust_badge_earned          TINYINT(1)      NOT NULL DEFAULT 0,
 
