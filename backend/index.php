@@ -156,6 +156,7 @@ try {
 } catch (Throwable $e) {
     http_response_code(500);
     echo json_encode([
+        'success' => false,
         'error' => [
             'code'    => 'INTERNAL_SERVER_ERROR',
             'message' => 'Internal Server Error',

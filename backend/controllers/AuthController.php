@@ -8,19 +8,21 @@ use Backend\Utils\Response;
 use Backend\Utils\Validator;
 
 /**
- * AuthController - MVP Implementation
- * 
- * Implements:
- * - POST /api/auth/register
- * - POST /api/auth/login
- * - GET /api/auth/me
- * 
- * Note: Email OTP verification is NOT implemented in this phase.
- * Users are created with isEmailVerified = true by default.
- * Fields are reserved for future OTP implementation without refactoring.
+ * AuthController
+ *
+ * POST /api/auth/register
+ * POST /api/auth/login
+ * GET  /api/auth/me
+ * POST /api/auth/logout
+ *
+ * Canonical field contract (what the API returns):
+ *   { userId, name, email, role, token, refreshToken, isProfileCompleted, onboardingStep }
+ *
+ * Input normalization:
+ *   Accepts both { name, role } (preferred) and { fullName, userType } (legacy).
  */
 class AuthController {
-    private User $userModel;
+    private User      $userModel;
     private Validator $validator;
 
     public function __construct() {
@@ -28,315 +30,239 @@ class AuthController {
         $this->validator = new Validator();
     }
 
-    /**
-     * Register new user (doctor or client)
-     * POST /api/auth/register
-     *
-     * Request:
-     * {
-     *   "name": "John Doe",
-     *   "email": "user@example.com",
-     *   "password": "securepassword123",
-     *   "role": "admin|doctor|user"
-     * }
-     *
-     * Response (201):
-     * { "success": true, "data": { "id", "name", "email", "role", "token", "refreshToken" } }
-     */
+    // ─────────────────────────────────────────────────────────
+    // POST /api/auth/register
+    // ─────────────────────────────────────────────────────────
     public function register(): void {
         try {
             $input = $this->getInputData();
 
-            // --- Normalize and Validate individual fields ---------------------------
-            $userType = $input['userType'] ?? $input['role'] ?? '';
-            $fullName = $input['fullName'] ?? $input['name'] ?? '';
-            
-            $role = strtolower(trim($userType));
-            $name = trim($fullName);
+            // ── Normalize incoming fields (accept both conventions) ──
+            $name  = trim($input['name'] ?? $input['fullName'] ?? '');
+            $email = strtolower(trim($input['email'] ?? ''));
+            $password = $input['password'] ?? '';
+            $role  = strtolower(trim($input['role'] ?? $input['userType'] ?? ''));
 
-            // Ensure input has the expected keys for validation
-            $input['userType'] = $role;
-            $input['fullName'] = $name;
-
-            // role must be 'client', or 'doctor'
-            if (empty($role) || !in_array($role, ['client', 'doctor'], true)) {
-                Response::error('userType must be one of client or doctor', 400);
+            // ── Role validation ──
+            $allowedRoles = ['client', 'doctor'];
+            if (!in_array($role, $allowedRoles, true)) {
+                Response::error(
+                    'role must be one of: ' . implode(', ', $allowedRoles),
+                    400,
+                    'INVALID_ROLE'
+                );
                 return;
             }
 
-            $isValid = $this->validator->validate($input, [
-                'fullName' => ['required', 'string'],
-                'email'    => ['required', 'email'],
-                'password' => ['required', ['min', 6]],
-            ]);
+            // ── Field validation ──
+            $validation = $this->validator->validate(
+                ['name' => $name, 'email' => $email, 'password' => $password],
+                [
+                    'name'     => ['required', 'string'],
+                    'email'    => ['required', 'email'],
+                    'password' => ['required', ['min', 6]],
+                ]
+            );
 
-            if (!$isValid) {
-                $errors = $this->validator->getErrors();
-                $firstError = array_values($errors)[0][0] ?? 'Invalid input';
-                Response::error($firstError, 400);
+            if (!$validation['valid']) {
+                Response::validation($validation['errors']);
                 return;
             }
 
-            $email    = strtolower(trim($input['email']));
-            $password = $input['password'];
+            // ── Duplicate email check ──
+            if ($this->userModel->emailExists($email)) {
+                Response::error('Email already registered', 409, 'EMAIL_EXISTS');
+                return;
+            }
 
-        // --- Duplicate email check ----------------------------------------------
-        if ($this->userModel->emailExists($email)) {
-            Response::error('Email already exists', 409);
-            return;
-        }
+            $hashedPassword = User::hashPassword($password);
 
-        $hashedPassword = User::hashPassword($password);
-
-            // Create user (is_email_verified = true by default, no OTP flow)
+            // ── Create user row ──
             $userId = $this->userModel->create([
                 'email'     => $email,
                 'password'  => $hashedPassword,
-                'user_type' => $role,          // stored as role in DB
+                'user_type' => $role,
                 'full_name' => $name,
             ]);
 
-            // Create initial sub-profile skeleton
+            // ── Create profile skeleton ──
             if ($role === 'doctor') {
                 $this->userModel->createDoctorProfile($userId);
             } elseif ($role === 'client') {
                 $this->userModel->createClientProfile($userId);
             }
 
-            // Generate tokens so the user can navigate immediately after register
-            $token = JWT::encode([
-                'userId'   => $userId,
-                'userType' => $role,
-                'email'    => $email,
-            ]);
+            // ── Issue tokens ──
+            [$token, $refreshToken] = $this->issueTokens($userId, $role, $email);
 
-            $refreshToken = JWT::encode([
-                'userId'   => $userId,
-                'userType' => $role,
-                'email'    => $email,
-                'type'     => 'refresh',
-            ], 7 * 24 * 3600);
-
-            // Exact response match
-            Response::success([
-                'userId'       => $userId,
-                'fullName'     => $name,
-                'email'        => $email,
-                'userType'     => $role,
-                'token'        => $token,
-                'refreshToken' => $refreshToken,
-                'is_profile_completed' => false,
-                'onboarding_step' => 0,
-            ]);
+            Response::success(
+                $this->buildAuthPayload($userId, $name, $email, $role, $token, $refreshToken, false, 0),
+                'Registration successful',
+                201
+            );
 
         } catch (\Exception $e) {
             error_log('Registration error: ' . $e->getMessage());
-            Response::error($e->getMessage(), 500);
+            Response::error('Registration failed', 500, 'SERVER_ERROR');
         }
     }
 
-    /**
-     * Login user
-     * POST /api/auth/login
-     * 
-     * Request:
-     * {
-     *   "email": "user@example.com",
-     *   "password": "securepassword123"
-     * }
-     * 
-     * Response (200):
-     * {
-     *   "success": true,
-     *   "data": {
-     *     "id": "550e8400-e29b-41d4-a716-446655440000",
-     *     "email": "user@example.com",
-     *     "userType": "doctor",
-     *     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-     *     "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-     *   }
-     * }
-     * 
-     * Note: Email verification is NOT checked (MVP feature set)
-     */
+    // ─────────────────────────────────────────────────────────
+    // POST /api/auth/login
+    // ─────────────────────────────────────────────────────────
     public function login(): void {
         try {
             $input = $this->getInputData();
 
-            // Validate input
-            $isValid = $this->validator->validate($input, [
+            $validation = $this->validator->validate($input, [
                 'email'    => ['required', 'email'],
                 'password' => ['required', 'string'],
             ]);
 
-            if (!$isValid) {
-                $errors = $this->validator->getErrors();
-                $firstError = array_values($errors)[0][0] ?? 'Invalid input';
-                Response::error($firstError, 400);
+            if (!$validation['valid']) {
+                Response::validation($validation['errors']);
                 return;
             }
 
-            $email    = strtolower(trim($input['email']));
-            $password = $input['password'];
-            $user = $this->userModel->findByEmail($email);
+            $email = strtolower(trim($input['email']));
+            $user  = $this->userModel->findByEmail($email);
 
-            if (!$user) {
-                Response::error("Invalid credentials", 401);
-                return;
-            }
-
-            if (!password_verify($password, $user['password'])) {
-                Response::error("Invalid credentials", 401);
+            // Generic "invalid credentials" — never leak which field is wrong
+            if (!$user || !password_verify($input['password'], $user['password'])) {
+                Response::error('Invalid email or password', 401, 'INVALID_CREDENTIALS');
                 return;
             }
 
             if (!$user['is_active']) {
-                Response::error('Account is inactive', 403);
+                Response::error('Account is inactive. Contact support.', 403, 'ACCOUNT_INACTIVE');
                 return;
             }
 
-            $name = $user['full_name'];
             $role = strtolower($user['user_type']);
-
             if (!in_array($role, ['client', 'doctor', 'admin'], true)) {
-                Response::error("Invalid user role", 500);
+                Response::error('Unrecognized user role', 500, 'INVALID_ROLE');
                 return;
             }
 
-            // ------------------------------------------------------------------
-            // Fix 8: Runtime migration safety check (client only).
-            // If the DB says profile is complete but critical fields are missing,
-            // reset onboarding state so the frontend resumes correctly.
-            // Critical fields: client_profiles.first_name, phone_number.
-            // ------------------------------------------------------------------
+            // ── Runtime integrity check for clients ──
             if ($role === 'client' && (bool)$user['is_profile_completed']) {
                 $db = \Backend\Config\Database::getInstance();
-                $chkStmt = $db->prepare(
-                    'SELECT full_name, phone_number FROM client_profiles WHERE user_id = ? LIMIT 1'
-                );
-                $chkStmt->execute([$user['id']]);
-                $profile = $chkStmt->fetch(\PDO::FETCH_ASSOC);
+                $chk = $db->prepare('SELECT full_name, phone_number FROM client_profiles WHERE user_id = ? LIMIT 1');
+                $chk->execute([$user['id']]);
+                $profile = $chk->fetch(\PDO::FETCH_ASSOC);
 
-                $criticalMissing = !$profile
-                    || empty($profile['full_name'])
-                    || empty($profile['phone_number']);
-
-                if ($criticalMissing) {
-                    $resetStmt = $db->prepare(
-                        'UPDATE users SET is_profile_completed = 0, onboarding_step = 1 WHERE id = ?'
-                    );
-                    $resetStmt->execute([$user['id']]);
-                    // Refresh values so the response reflects the corrected state.
+                if (!$profile || empty($profile['full_name']) || empty($profile['phone_number'])) {
+                    $db->prepare('UPDATE users SET is_profile_completed = 0, onboarding_step = 1 WHERE id = ?')
+                       ->execute([$user['id']]);
                     $user['is_profile_completed'] = 0;
                     $user['onboarding_step']       = 1;
                 }
             }
 
-            $token = JWT::encode([
-                'userId'   => $user['id'],
-                'userType' => $role,
-                'email'    => $user['email'],
-            ]);
+            [$token, $refreshToken] = $this->issueTokens($user['id'], $role, $user['email']);
 
-            $refreshToken = JWT::encode([
-                'userId'   => $user['id'],
-                'userType' => $role,
-                'email'    => $user['email'],
-                'type'     => 'refresh',
-            ], 7 * 24 * 3600);
-
-            Response::success([
-                'userId'               => $user['id'],
-                'fullName'             => $name,
-                'email'                => $user['email'],
-                'userType'             => $role,
-                'token'                => $token,
-                'refreshToken'         => $refreshToken,
-                'is_profile_completed' => (bool)$user['is_profile_completed'],
-                'onboarding_step'      => (int)$user['onboarding_step'],
-            ], 200);
+            Response::success(
+                $this->buildAuthPayload(
+                    $user['id'],
+                    $user['full_name'],
+                    $user['email'],
+                    $role,
+                    $token,
+                    $refreshToken,
+                    (bool)$user['is_profile_completed'],
+                    (int)$user['onboarding_step']
+                ),
+                'Login successful'
+            );
 
         } catch (\Exception $e) {
             error_log('Login error: ' . $e->getMessage());
-            Response::error($e->getMessage(), 500);
+            Response::error('Login failed', 500, 'SERVER_ERROR');
         }
     }
 
-    /**
-     * Get current authenticated user
-     * GET /api/auth/me
-     * 
-     * Headers:
-     * Authorization: Bearer <token>
-     * 
-     * Response (200):
-     * {
-     *   "success": true,
-     *   "data": {
-     *     "id": "550e8400-e29b-41d4-a716-446655440000",
-     *     "email": "user@example.com",
-     *     "userType": "doctor",
-     *     "isEmailVerified": true
-     *   }
-     * }
-     */
+    // ─────────────────────────────────────────────────────────
+    // GET /api/auth/me
+    // ─────────────────────────────────────────────────────────
     public function getCurrentUser(object $payload): void {
         try {
             $userId = $payload->userId ?? $payload->user_id ?? null;
             if (!$userId) {
-                Response::error('Invalid token payload', 400);
+                Response::error('Invalid token payload', 400, 'BAD_TOKEN');
                 return;
             }
 
             $user = $this->userModel->findById($userId);
-
             if (!$user) {
-                Response::error('User not found', 404);
+                Response::notFound('User not found');
                 return;
             }
 
             Response::success([
-                'userId'         => $user['id'],
-                'email'          => $user['email'],
-                'fullName'       => $user['full_name'] ?? '',
-                'userType'       => $user['role'], // role is alias for user_type
-                'isEmailVerified'=> (bool)($user['is_email_verified'] ?? true),
+                'userId'           => $user['id'],
+                'name'             => $user['full_name'],
+                'email'            => $user['email'],
+                'role'             => $user['user_type'],
+                'isEmailVerified'  => (bool)($user['is_email_verified'] ?? true),
+                'isProfileCompleted' => (bool)$user['is_profile_completed'],
+                'onboardingStep'   => (int)$user['onboarding_step'],
             ]);
 
         } catch (\Exception $e) {
             error_log('Get current user error: ' . $e->getMessage());
-            Response::error($e->getMessage(), 500);
+            Response::error('Failed to fetch user', 500, 'SERVER_ERROR');
         }
     }
 
-    /**
-     * Logout user
-     * POST /api/auth/logout
-     * 
-     * Headers:
-     * Authorization: Bearer <token>
-     */
+    // ─────────────────────────────────────────────────────────
+    // POST /api/auth/logout
+    // ─────────────────────────────────────────────────────────
     public function logout(object $payload): void {
-        try {
-            // For stateless JWT, we return a success response and the client must discard the token.
-            // If using a stateful refresh token database, you would invalidate it here.
-            Response::success([
-                'message' => 'Logged out successfully'
-            ], 200);
-        } catch (\Exception $e) {
-            error_log('Logout error: ' . $e->getMessage());
-            Response::error('Failed to logout', 500);
-        }
+        // Stateless JWT — client must discard the token.
+        Response::success([], 'Logged out successfully');
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // PRIVATE HELPERS
+    // ─────────────────────────────────────────────────────────
+
+    private function issueTokens(string $userId, string $role, string $email): array {
+        $claims = ['userId' => $userId, 'userType' => $role, 'email' => $email];
+
+        $token        = JWT::encode($claims);
+        $refreshToken = JWT::encode(array_merge($claims, ['type' => 'refresh']), 7 * 24 * 3600);
+
+        return [$token, $refreshToken];
     }
 
     /**
-     * Parse input data from request
+     * Build the canonical auth payload returned by register/login.
+     * Only ONE set of field names — no duplicates.
      */
-    private function getInputData(): array {
-        $input = file_get_contents('php://input');
-        $data = json_decode($input, true) ?? [];
+    private function buildAuthPayload(
+        string $userId,
+        string $name,
+        string $email,
+        string $role,
+        string $token,
+        string $refreshToken,
+        bool   $isProfileCompleted,
+        int    $onboardingStep
+    ): array {
+        return [
+            'userId'             => $userId,
+            'name'               => $name,
+            'email'              => $email,
+            'role'               => $role,
+            'token'              => $token,
+            'refreshToken'       => $refreshToken,
+            'isProfileCompleted' => $isProfileCompleted,
+            'onboardingStep'     => $onboardingStep,
+        ];
+    }
 
-        // Also check $_GET and $_POST for fallback
-        return array_merge($_GET, $_POST, $data);
+    private function getInputData(): array {
+        $body = json_decode(file_get_contents('php://input'), true) ?? [];
+        return array_merge($_POST, $body);   // body wins over POST (multipart fallback)
     }
 }

@@ -40,6 +40,7 @@ DROP TABLE IF EXISTS consultation_sessions;
 DROP TABLE IF EXISTS appointments;
 DROP TABLE IF EXISTS available_slots;
 DROP TABLE IF EXISTS doctor_weekly_schedule;
+DROP TABLE IF EXISTS doctor_experiences;
 DROP TABLE IF EXISTS doctor_qualifications;
 DROP TABLE IF EXISTS doctor_profiles;
 DROP TABLE IF EXISTS client_profiles;
@@ -197,23 +198,48 @@ CREATE TABLE client_profiles (
 
 -- ============================================================
 -- 4. DOCTOR QUALIFICATIONS TABLE
--- PHP references: id, doctor_id, degree, institute_name,
---   year_of_completion, certificate_file
--- Note: doctor_id → doctor_profiles.user_id (CHAR(36))
 -- ============================================================
 CREATE TABLE doctor_qualifications (
     id                  CHAR(36)        NOT NULL DEFAULT (UUID()),
     doctor_id           CHAR(36)        NOT NULL,
-    institute_name      VARCHAR(255)    NOT NULL DEFAULT '',
-    degree              VARCHAR(150)    NOT NULL DEFAULT '',
-    specialization      VARCHAR(150)    NULL,
-    year_of_completion  YEAR            NOT NULL,
-    certificate_file    VARCHAR(500)    NULL,
+    title               VARCHAR(255)    NOT NULL,
+    degree              VARCHAR(255)    NULL,
+    institution         VARCHAR(255)    NULL,
+    year                SMALLINT        NULL,
+    document_path       VARCHAR(1024)   NULL,
+    created_at          TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     PRIMARY KEY (id),
     INDEX idx_qual_doctor (doctor_id),
 
     CONSTRAINT fk_qual_doctor
+        FOREIGN KEY (doctor_id) REFERENCES doctor_profiles(user_id)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ============================================================
+-- 4b. DOCTOR EXPERIENCES TABLE
+-- ============================================================
+CREATE TABLE doctor_experiences (
+    id                  CHAR(36)        NOT NULL DEFAULT (UUID()),
+    doctor_id           CHAR(36)        NOT NULL,
+    company             VARCHAR(255)    NOT NULL,
+    role_title          VARCHAR(255)    NOT NULL,
+    employment_type     ENUM('full_time','part_time','contract','freelance','internship','other')
+                        NOT NULL DEFAULT 'full_time',
+    currently_working   TINYINT(1)      NOT NULL DEFAULT 0,
+    start_date          DATE            NOT NULL,
+    end_date            DATE            NULL,
+    description         TEXT            NULL,
+    created_at          TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (id),
+    INDEX idx_exp_doctor (doctor_id),
+
+    CONSTRAINT fk_exp_doctor
         FOREIGN KEY (doctor_id) REFERENCES doctor_profiles(user_id)
         ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

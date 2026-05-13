@@ -2,6 +2,7 @@
 
 namespace Backend\Controllers;
 
+use Backend\Config\Database;
 use Backend\Models\User;
 use Backend\Models\DoctorProfile;
 use Backend\Models\Appointment;
@@ -12,94 +13,87 @@ use Backend\Middleware\AuthMiddleware;
 /**
  * AdminController
  *
- * Handles admin-only operations:
- *  - Create admin users
- *  - Verify/reject doctor profiles
- *  - List all doctors (including unverified)
- *  - List all appointments system-wide
+ * POST  /api/admin/create-admin
+ * PATCH /api/admin/verify-doctor
+ * GET   /api/admin/doctors
+ * GET   /api/admin/appointments
  */
 class AdminController {
-    private User $userModel;
+    private User          $userModel;
     private DoctorProfile $doctorModel;
-    private Appointment $appointmentModel;
-    private Validator $validator;
+    private Appointment   $appointmentModel;
+    private Validator     $validator;
 
     public function __construct() {
-        $this->userModel = new User();
-        $this->doctorModel = new DoctorProfile();
+        $this->userModel        = new User();
+        $this->doctorModel      = new DoctorProfile();
         $this->appointmentModel = new Appointment();
-        $this->validator = new Validator();
+        $this->validator        = new Validator();
     }
 
-    /**
-     * Create a new admin user
-     * POST /api/admin/create-admin
-     */
+    // ─────────────────────────────────────────────────────────
+    // POST /api/admin/create-admin
+    // ─────────────────────────────────────────────────────────
     public function createAdmin(object $payload): void {
         AuthMiddleware::requireRole($payload, 'admin');
 
         $input = $this->getInputData();
 
-        $validation = $this->validator->validate($input, [
-            'fullName' => ['required', 'string'],
+        // Normalise: accept 'name' or 'fullName'
+        $input['name'] = $input['name'] ?? $input['fullName'] ?? '';
+
+        $result = $this->validator->validate($input, [
+            'name'     => ['required', 'string'],
             'email'    => ['required', 'email'],
             'password' => ['required', 'string', ['min', 6]],
         ]);
 
-        if (!$validation['valid']) {
-            Response::validation($validation['errors']);
+        if (!$result['valid']) {
+            Response::validation($result['errors']);
             return;
         }
 
-        // Check for duplicate email
         if ($this->userModel->emailExists($input['email'])) {
-            Response::error('Email already registered', 409);
+            Response::error('Email already registered', 409, 'EMAIL_EXISTS');
             return;
         }
 
         try {
-            $hashedPassword = User::hashPassword($input['password']);
             $userId = $this->userModel->create([
-                'email'     => $input['email'],
-                'password'  => $hashedPassword,
+                'email'     => strtolower(trim($input['email'])),
+                'password'  => User::hashPassword($input['password']),
                 'user_type' => 'admin',
-                'full_name' => $input['fullName'],
+                'full_name' => trim($input['name']),
             ]);
 
-            Response::success([
-                'id'      => $userId,
-                'message' => 'Admin user created successfully',
-            ], 201);
-
+            Response::success(['userId' => $userId], 'Admin user created successfully', 201);
         } catch (\Exception $e) {
-            error_log("Create admin error: " . $e->getMessage());
-            Response::error('Failed to create admin user', 500);
+            error_log('Create admin error: ' . $e->getMessage());
+            Response::error('Failed to create admin user', 500, 'SERVER_ERROR');
         }
     }
 
-    /**
-     * Verify or reject a doctor's profile
-     * PATCH /api/admin/verify-doctor
-     */
+    // ─────────────────────────────────────────────────────────
+    // PATCH /api/admin/verify-doctor
+    // ─────────────────────────────────────────────────────────
     public function verifyDoctor(object $payload): void {
         AuthMiddleware::requireRole($payload, 'admin');
 
         $input = $this->getInputData();
 
-        $validation = $this->validator->validate($input, [
+        $result = $this->validator->validate($input, [
             'doctorId' => ['required', 'string'],
-            'status'   => ['required', 'string', ['in', 'approved', 'rejected']],
+            'status'   => ['required', 'string', ['in', 'approved', 'rejected', 'resubmission_required']],
         ]);
 
-        if (!$validation['valid']) {
-            Response::validation($validation['errors']);
+        if (!$result['valid']) {
+            Response::validation($result['errors']);
             return;
         }
 
         try {
-            // Verify doctor exists
             if (!$this->doctorModel->exists($input['doctorId'])) {
-                Response::error('Doctor profile not found', 404);
+                Response::notFound('Doctor profile not found');
                 return;
             }
 
@@ -108,39 +102,36 @@ class AdminController {
             Response::success([
                 'doctorId' => $input['doctorId'],
                 'status'   => $input['status'],
-                'message'  => 'Doctor verification status updated',
-            ], 200);
+            ], 'Doctor verification status updated');
 
         } catch (\Exception $e) {
-            error_log("Verify doctor error: " . $e->getMessage());
-            Response::error('Failed to update doctor verification', 500);
+            error_log('Verify doctor error: ' . $e->getMessage());
+            Response::error('Failed to update verification status', 500, 'SERVER_ERROR');
         }
     }
 
-    /**
-     * List all doctors (including unverified/inactive)
-     * GET /api/admin/doctors
-     */
+    // ─────────────────────────────────────────────────────────
+    // GET /api/admin/doctors
+    // ─────────────────────────────────────────────────────────
     public function listDoctors(object $payload): void {
         AuthMiddleware::requireRole($payload, 'admin');
 
         try {
-            // Use a direct query to get ALL doctors, not just active/verified
-            $db = \Backend\Config\Database::getInstance();
+            $db   = Database::getInstance();
             $stmt = $db->prepare('
                 SELECT
-                    dp.user_id,
-                    u.full_name,
+                    dp.user_id        AS userId,
+                    u.full_name       AS name,
                     u.email,
                     dp.gender,
-                    dp.primary_specialty,
-                    dp.years_of_experience,
-                    dp.is_verified,
-                    dp.is_active,
-                    dp.verification_status,
-                    dp.profile_photo_url,
-                    dp.created_at,
-                    dp.updated_at
+                    dp.primary_specialty  AS primarySpecialty,
+                    dp.years_of_experience AS yearsOfExperience,
+                    dp.license_number AS licenseNumber,
+                    dp.is_verified    AS isVerified,
+                    dp.is_active      AS isActive,
+                    dp.verification_status AS verificationStatus,
+                    dp.profile_photo_url   AS profilePhotoUrl,
+                    dp.created_at
                 FROM doctor_profiles dp
                 JOIN users u ON dp.user_id = u.id
                 ORDER BY dp.created_at DESC
@@ -148,67 +139,64 @@ class AdminController {
             $stmt->execute();
             $doctors = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
-            Response::success([
-                'doctors' => $doctors,
-                'count'   => count($doctors),
-            ], 200);
+            // Cast booleans
+            foreach ($doctors as &$d) {
+                $d['isVerified'] = (bool)$d['isVerified'];
+                $d['isActive']   = (bool)$d['isActive'];
+            }
+            unset($d);
+
+            Response::success(['doctors' => $doctors, 'count' => count($doctors)]);
 
         } catch (\Exception $e) {
-            error_log("Admin list doctors error: " . $e->getMessage());
-            Response::error('Failed to fetch doctors', 500);
+            error_log('Admin list doctors: ' . $e->getMessage());
+            Response::error('Failed to fetch doctors', 500, 'SERVER_ERROR');
         }
     }
 
-    /**
-     * List all appointments system-wide
-     * GET /api/admin/appointments
-     */
+    // ─────────────────────────────────────────────────────────
+    // GET /api/admin/appointments
+    // ─────────────────────────────────────────────────────────
     public function listAppointments(object $payload): void {
         AuthMiddleware::requireRole($payload, 'admin');
 
         try {
-            $db = \Backend\Config\Database::getInstance();
+            $db     = Database::getInstance();
             $status = $_GET['status'] ?? null;
 
-            $query = '
+            $sql    = '
                 SELECT
-                    a.*,
-                    d.full_name AS doctor_name,
-                    c.full_name AS client_name
+                    a.id, a.scheduled_date AS scheduledDate,
+                    a.scheduled_time AS scheduledTime, a.end_time AS endTime,
+                    a.consultation_type AS consultationType,
+                    a.status, a.notes,
+                    ud.full_name AS doctorName,
+                    uc.full_name AS clientName
                 FROM appointments a
-                LEFT JOIN users d ON a.doctor_id = d.id
-                LEFT JOIN users c ON a.client_id = c.id
+                LEFT JOIN users ud ON a.doctor_id = ud.id
+                LEFT JOIN users uc ON a.client_id = uc.id
             ';
-
             $params = [];
             if ($status) {
-                $query .= ' WHERE a.status = ?';
+                $sql      .= ' WHERE a.status = ?';
                 $params[] = $status;
             }
+            $sql .= ' ORDER BY a.scheduled_date DESC, a.scheduled_time DESC';
 
-            $query .= ' ORDER BY a.scheduled_date DESC, a.scheduled_time DESC';
-
-            $stmt = $db->prepare($query);
+            $stmt = $db->prepare($sql);
             $stmt->execute($params);
-            $appointments = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
-            Response::success([
-                'appointments' => $appointments,
-                'count'        => count($appointments),
-            ], 200);
+            Response::success(['appointments' => $rows, 'count' => count($rows)]);
 
         } catch (\Exception $e) {
-            error_log("Admin list appointments error: " . $e->getMessage());
-            Response::error('Failed to fetch appointments', 500);
+            error_log('Admin list appointments: ' . $e->getMessage());
+            Response::error('Failed to fetch appointments', 500, 'SERVER_ERROR');
         }
     }
 
-    /**
-     * Parse input data from request body
-     */
     private function getInputData(): array {
-        $input = file_get_contents('php://input');
-        $data = json_decode($input, true) ?? [];
-        return array_merge($_GET, $_POST, $data);
+        $body = json_decode(file_get_contents('php://input'), true) ?? [];
+        return array_merge($_POST, $body);
     }
 }

@@ -277,7 +277,149 @@ class ApiService {
 ---
 
 ## 10. Best Practices
-- **Token Management**: Intercept `401 Unauthorized` responses to trigger a logout or token refresh flow.
-- **Form Validation**: Validate email format and password length in Flutter before making API calls.
-- **Data Integrity**: Never hardcode names in profile setup; the backend pulls names from the authenticated user record.
-- **Calculations**: Use a helper function in Flutter to compute Age from `dateOfBirth`.
+
+---
+
+## 11. Detailed Endpoints (derived from controllers)
+
+Note: The following is generated from the PHP controller implementations. It lists every implemented endpoint, required auth/role, expected request fields, common query parameters, and sample success responses. Use this as a reference for exact parameter names (camelCase vs snake_case) and validation rules.
+
+- **Auth**
+  - POST `/api/auth/register` — Register user (role: `client` or `doctor`).
+    - Body: `fullName`, `email`, `password`, `userType` (`client|doctor`).
+    - Response (201): `{ success: true, data: { userId, fullName, email, userType, token, refreshToken, is_profile_completed, onboarding_step } }`
+    - Errors: 400 validation, 409 duplicate email.
+
+  - POST `/api/auth/login` — Login.
+    - Body: `email`, `password`.
+    - Response (200): `{ success: true, data: { userId, fullName, email, userType, token, refreshToken, is_profile_completed, onboarding_step } }`
+    - Errors: 400 validation, 401 invalid credentials, 403 inactive account.
+
+  - POST `/api/auth/logout` — Logout (requires `Authorization: Bearer <token>`).
+    - Response (200): `{ success: true, message: 'Logged out successfully' }`
+
+  - GET `/api/auth/me` — Get current user (requires auth).
+    - Response (200): `{ success: true, data: { userId, email, fullName, userType, isEmailVerified } }`
+
+- **Clients**
+  - POST `/api/clients/setup` — Multi-step onboarding (role: `client`).
+    - Body: required `step` (1..3). Allowed fields per step:
+      - Step 1: `name`, `gender`, `dateOfBirth`, `phoneNumber`.
+      - Step 2: `medicalHistory`, `allergies`, `currentMedications`.
+      - Step 3: `emergencyContact` (object: `name`, `phoneNumber`).
+    - Response (200): `{ success: true, data: { onboarding_step, is_profile_completed }}`
+    - Errors: 400 on forbidden fields, invalid sequence, missing/empty values.
+
+  - GET `/api/clients/profile` — Get own client profile (role: `client`).
+    - Response (200): `{ success: true, data: { client: { ...client profile fields... } } }`
+
+  - GET `/api/clients/appointments` — Get client's appointments (role: `client`).
+    - Query: optional `status`.
+    - Response (200): `{ appointments: [...], count: N }`
+
+- **Doctors**
+  - POST `/api/doctors/setup` — Create/update doctor profile (multipart/form-data; role: `doctor`).
+    - Required form fields: `gender`, `dateOfBirth`, `phoneNumber`, `primarySpecialty`, `yearsOfExperience`, `licenseNumber`, `languagesSpoken` (JSON array), `videoEnabled` (boolean), `videoRate`, `consultationDuration` (`30min|45min|60min`), `bufferTime` (`5min|10min|15min|30min`), plus `profilePhoto` file upload (JPG/PNG <= 2MB).
+    - Response (201): `{ message: 'Doctor profile created successfully', profile_photo_url }`
+    - Errors: 400 validation, forbidden fields (e.g., `fullName`), 500 storage error.
+
+  - GET `/api/doctors` — List doctors (implementation currently calls with auth; may be public in future).
+    - Response (200): Array of doctor objects (camelCased fields like `primarySpecialty`, `yearsOfExperience`).
+
+  - GET `/api/doctors/profile` — Get own doctor profile (role: `doctor`).
+
+  - GET `/api/doctors/{id}` — Get doctor public profile (may be restricted to verified/active doctors for non-admin viewers).
+
+  - PATCH `/api/doctors/status` — Update `isActive` (role: `doctor`).
+    - Body: `{ isActive: true|false }`.
+
+  - GET `/api/doctors/appointments` — Delegates to appointments controller to return doctor's appointments (role: `doctor`).
+
+  - **Qualifications (CRUD)**
+    - POST `/api/doctors/{id}/qualifications` — Create qualification (multipart/form-data; role: `doctor` or `admin`).
+      - Fields: `title` (required), `institution`, `year`, `document` (file, max 5MB, PDF/PNG/JPEG).
+      - Response (201): `{ success: true, data: { ... } }`
+    - GET `/api/doctors/{id}/qualifications` — List qualifications for doctor.
+      - Response (200): `{ success: true, data: [ ... ] }`
+    - PUT `/api/doctors/{id}/qualifications/{qual_id}` — Update qualification (JSON).
+      - Body: `title`, `institution`, `year`.
+    - DELETE `/api/doctors/{id}/qualifications/{qual_id}` — Delete qualification.
+
+- **Available Slots**
+  - POST `/api/available-slots` — Create slot (role: `doctor`).
+    - Body: `slot_date` (YYYY-MM-DD), `slot_time` (HH:MM), `duration_minutes` (number), `is_available` (optional boolean).
+    - Response (201): `{ id: slotId }`
+
+  - GET `/api/available-slots/{id}` — Get slot details.
+    - Response (200): `{ slot: { ... } }`
+
+  - GET `/api/available-slots/doctor/{doctorId}` — List slots for doctor.
+    - Response (200): `{ slots: [...], count }`
+
+  - GET `/api/appointments/available-slots` — Get available slots (client-facing helper).
+    - Query: `doctorId`, `fromDate` (YYYY-MM-DD), `toDate` (YYYY-MM-DD). Role: `client`.
+    - Response (200): `{ availableSlots: [...], count }`
+
+  - PUT `/api/available-slots/{id}` — Update slot (role: `doctor`).
+  - DELETE `/api/available-slots/{id}` — Delete slot (role: `doctor`).
+
+- **Appointments**
+  - POST `/api/appointments` — Book appointment (role: `client`).
+    - Body: `doctorId`, `scheduledDate` (YYYY-MM-DD), `scheduledTime` (HH:MM or HH:MM:SS), optional `durationMinutes`, optional `consultationType` (`video|audio|chat`).
+    - Behavior: validates formats, computes `endTime` from `durationMinutes` (default 50), checks doctor/client overlap via `hasOverlappingAppointment` & `hasClientConflict`.
+    - Response (201): `{ id, message, scheduledDate, scheduledTime, endTime }`
+    - Errors: 400 validation/format, 409 conflict (doctor or client overlap).
+
+  - GET `/api/appointments` — List own appointments (client/doctor/admin). Query: optional `status`.
+    - Response (200): `{ appointments: [...], count }`
+
+  - GET `/api/appointments/{id}` — Get appointment (authorized participants or admin).
+    - Response (200): `{ appointment: { ... } }`
+
+  - PUT `/api/appointments/{id}` — Update appointment (participants or admin). Body supports `status`, `notes`, `scheduled_date`, `scheduled_time`.
+  - PATCH `/api/appointments/{id}/cancel` — Cancel appointment (participants or admin). Only `scheduled` status can be cancelled.
+
+- **Consultations**
+  - POST `/api/consultations` — Create consultation record (role: `doctor`).
+    - Response (201): `{ id }`
+
+  - POST `/api/consultations/{id}/start` — Start consultation (doctor or client; role checked). Returns consultation/session info (201).
+  - POST `/api/consultations/{id}/end` — End consultation (role: `doctor`), optional body: `notes`. Response (200) confirms status `completed`.
+
+  - GET `/api/consultations/{id}` — Get consultation details.
+  - PUT `/api/consultations/{id}` — Update consultation (doctor).
+  - GET `/api/consultations/client` — List client's consultations (role: `client`).
+  - GET `/api/consultations/doctor` — List doctor's consultations (role: `doctor`).
+
+- **Messages**
+  - POST `/api/appointments/{id}/messages` — Send message within appointment (roles: `doctor`, `client`).
+    - Body: `content` (required), optional `messageType` (`text` only in MVP).
+    - Response (201): `{ messageId, timestamp, message }`
+
+  - GET `/api/appointments/{id}/messages` — List messages for appointment (roles: doctor/client). Query: `page`, `limit`.
+
+  - POST `/api/messages` — Send standalone message (roles: doctor/client).
+    - Body: `recipient_id`, `message_body` or `content`, optional `subject`.
+    - Response (201): `{ id }`
+
+  - GET `/api/messages/inbox` — Inbox for current user.
+  - GET `/api/messages/sent` — Sent messages.
+  - GET `/api/messages/{id}` — Get single message.
+  - PUT `/api/messages/{id}` — Update message (e.g., mark read).
+  - DELETE `/api/messages/{id}` — Delete message.
+
+- **Admin**
+  - POST `/api/admin/create-admin` — Create admin user (role: `admin`).
+    - Body: `fullName`, `email`, `password`.
+    - Response (201): `{ id, message }`
+
+  - PATCH `/api/admin/verify-doctor` — Verify or reject doctor (role: `admin`).
+    - Body: `doctorId`, `status` (`approved|rejected`).
+    - Response (200): `{ doctorId, status, message }`
+
+  - GET `/api/admin/doctors` — List all doctors (admin only). Response includes verification and active flags.
+  - GET `/api/admin/appointments` — List all appointments system-wide. Query: optional `status`.
+
+---
+
+If you'd like, I will now: (A) expand each endpoint with exact example requests/responses, or (B) produce a machine-readable OpenAPI spec (YAML/JSON) based on these controllers. Which do you prefer? 
