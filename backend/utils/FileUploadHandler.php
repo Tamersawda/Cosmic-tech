@@ -198,6 +198,79 @@ class FileUploadHandler {
         chmod($dest, 0640); // owner rw, group r, world none
     }
 
+    /**
+     * Upload a government ID document (PDF, PNG, JPEG ≤ 5 MB).
+     * Used for both front and back sides.
+     */
+    public function uploadGovernmentID(array $file, string $doctorId, string $side): string {
+        $this->validateUploadError($file);
+        $this->validateSize($file, self::DEFAULT_MAX_SIZE);
+
+        $mime = $this->detectMime($file['tmp_name']);
+        if (!array_key_exists($mime, self::ALLOWED_MIME_TYPES)) {
+            throw new \RuntimeException(
+                'Invalid file type. Only PDF, PNG, and JPEG are accepted for ID documents.'
+            );
+        }
+
+        $ext = self::ALLOWED_MIME_TYPES[$mime];
+        $this->blockExecutableExtension($ext);
+
+        $subDir  = 'govt-id/' . preg_replace('/[^a-zA-Z0-9\-]/', '', $doctorId);
+        $relPath = $subDir . '/' . $side . '_' . $this->generateFilename($ext);
+
+        $this->moveFile($file['tmp_name'], $relPath);
+        return $relPath;
+    }
+
+    /**
+     * Upload RCI or professional registration certificate
+     */
+    public function uploadRegistrationCertificate(array $file, string $doctorId): string {
+        $this->validateUploadError($file);
+        $this->validateSize($file, self::DEFAULT_MAX_SIZE);
+
+        $mime = $this->detectMime($file['tmp_name']);
+        if (!array_key_exists($mime, self::ALLOWED_MIME_TYPES)) {
+            throw new \RuntimeException(
+                'Invalid file type. Only PDF, PNG, and JPEG are accepted.'
+            );
+        }
+
+        $ext = self::ALLOWED_MIME_TYPES[$mime];
+        $this->blockExecutableExtension($ext);
+
+        $subDir  = 'registration-certificates/' . preg_replace('/[^a-zA-Z0-9\-]/', '', $doctorId);
+        $relPath = $subDir . '/' . $this->generateFilename($ext);
+
+        $this->moveFile($file['tmp_name'], $relPath);
+        return $relPath;
+    }
+
+    /**
+     * Upload experience/work proof document
+     */
+    public function uploadExperienceProof(array $file, string $doctorId): string {
+        $this->validateUploadError($file);
+        $this->validateSize($file, self::DEFAULT_MAX_SIZE);
+
+        $mime = $this->detectMime($file['tmp_name']);
+        if (!array_key_exists($mime, self::ALLOWED_MIME_TYPES)) {
+            throw new \RuntimeException(
+                'Invalid file type. Only PDF, PNG, and JPEG are accepted.'
+            );
+        }
+
+        $ext = self::ALLOWED_MIME_TYPES[$mime];
+        $this->blockExecutableExtension($ext);
+
+        $subDir  = 'experience-proof/' . preg_replace('/[^a-zA-Z0-9\-]/', '', $doctorId);
+        $relPath = $subDir . '/' . $this->generateFilename($ext);
+
+        $this->moveFile($file['tmp_name'], $relPath);
+        return $relPath;
+    }
+
     // Legacy shim used by DoctorQualificationController::uploadDocument path
     public function uploadDocument(array $file, string $userId, string $context): string {
         return $this->uploadQualificationDocument($file, $userId);

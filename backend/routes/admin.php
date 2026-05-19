@@ -55,5 +55,42 @@ return function(string $method, string $path) {
         return;
     }
 
+    // ── Onboarding verification routes ──────────────────────────────────
+    
+    // GET /api/admin/onboarding/pending
+    if ($method === 'GET' && $normalizedPath === '/onboarding/pending') {
+        $payload = AuthMiddleware::authenticate();
+        $controller->listPendingOnboarding($payload);
+        return;
+    }
+
+    // GET /api/admin/onboarding/{doctorId}
+    if ($method === 'GET' && preg_match('#^/onboarding/([0-9a-f\-]+)$#i', $normalizedPath, $matches)) {
+        $payload = AuthMiddleware::authenticate();
+        $controller->getOnboardingDetails($payload, $matches[1]);
+        return;
+    }
+
+    // POST /api/admin/onboarding/{doctorId}/approve
+    if ($method === 'POST' && preg_match('#^/onboarding/([0-9a-f\-]+)/approve$#i', $normalizedPath, $matches)) {
+        $payload = AuthMiddleware::authenticate();
+        $controller->approveOnboarding($payload, $matches[1]);
+        return;
+    }
+
+    // POST /api/admin/onboarding/{doctorId}/reject
+    if ($method === 'POST' && preg_match('#^/onboarding/([0-9a-f\-]+)/reject$#i', $normalizedPath, $matches)) {
+        $payload = AuthMiddleware::authenticate();
+        $controller->rejectOnboarding($payload, $matches[1]);
+        return;
+    }
+
+    // POST /api/admin/onboarding/{doctorId}/request-resubmission
+    if ($method === 'POST' && preg_match('#^/onboarding/([0-9a-f\-]+)/request-resubmission$#i', $normalizedPath, $matches)) {
+        $payload = AuthMiddleware::authenticate();
+        $controller->requestResubmission($payload, $matches[1]);
+        return;
+    }
+
     Response::error('Route not found in Admin: ' . $method . ' ' . $path, 404);
 };

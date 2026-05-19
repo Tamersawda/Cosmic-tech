@@ -197,6 +197,245 @@ class AdminController {
         }
     }
 
+    // ─────────────────────────────────────────────────────────
+    // GET /api/admin/onboarding/pending
+    // ─────────────────────────────────────────────────────────
+    public function listPendingOnboarding(object $payload): void {
+        AuthMiddleware::requireRole($payload, 'admin');
+
+        try {
+            $onboardingModel = new \Backend\Models\Onboarding();
+            $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
+            $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
+
+            $doctors = $onboardingModel->getPendingVerification($limit, $offset);
+
+            Response::success([
+                'count' => count($doctors),
+                'limit' => $limit,
+                'offset' => $offset,
+                'doctors' => $doctors,
+            ]);
+
+        } catch (\Exception $e) {
+            error_log('Admin list pending onboarding: ' . $e->getMessage());
+            Response::error('Failed to fetch pending onboarding', 500, 'SERVER_ERROR');
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // GET /api/admin/onboarding/{doctorId}
+    // ─────────────────────────────────────────────────────────
+    public function getOnboardingDetails(object $payload, string $doctorId): void {
+        AuthMiddleware::requireRole($payload, 'admin');
+
+        try {
+            $profile = $this->doctorModel->findByUserId($doctorId);
+            if (!$profile) {
+                Response::notFound('Doctor profile not found');
+                return;
+            }
+
+            $onboardingModel = new \Backend\Models\Onboarding();
+            $logs = $onboardingModel->getVerificationLog($doctorId);
+
+            $response = [
+                'profile' => $profile,
+                'verificationLogs' => $logs,
+            ];
+
+            Response::success($response);
+
+        } catch (\Exception $e) {
+            error_log('Admin get onboarding details: ' . $e->getMessage());
+            Response::error('Failed to fetch onboarding details', 500, 'SERVER_ERROR');
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // POST /api/admin/onboarding/{doctorId}/approve
+    // ─────────────────────────────────────────────────────────
+    public function approveOnboarding(object $payload, string $doctorId): void {
+        AuthMiddleware::requireRole($payload, 'admin');
+
+        try {
+            $profile = $this->doctorModel->findByUserId($doctorId);
+            if (!$profile) {
+                Response::notFound('Doctor profile not found');
+                return;
+            }
+
+            $onboardingModel = new \Backend\Models\Onboarding();
+
+            // Update verification status
+            $onboardingModel->updateVerificationStatus($doctorId, 'approved');
+
+            // Update profile approval
+            $this->doctorModel->update($doctorId, [
+                'verification_status' => 'approved',
+                'reviewed_at' => date('Y-m-d H:i:s'),
+                'is_profile_approved' => true,
+            ]);
+
+            // Log action
+            $onboardingModel->logVerificationAction(
+                $doctorId,
+                'profile_approved',
+                8,
+                'submitted',
+                'approved',
+                null,
+                is_array($payload) ? ($payload['id'] ?? null) : ($payload->id ?? null),
+                'Profile approved by admin'
+            );
+
+            // Send approval email
+            try {
+                $emailService = new \Backend\Utils\EmailService();
+                $emailService->sendOnboardingApprovalEmail($doctorId);
+            } catch (\Exception $e) {
+                error_log('Failed to send approval email: ' . $e->getMessage());
+            }
+
+            Response::success([
+                'doctorId' => $doctorId,
+                'verificationStatus' => 'approved',
+                'message' => 'Doctor profile approved successfully',
+            ]);
+
+        } catch (\Exception $e) {
+            error_log('Admin approve onboarding: ' . $e->getMessage());
+            Response::error('Failed to approve onboarding', 500, 'SERVER_ERROR');
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // POST /api/admin/onboarding/{doctorId}/reject
+    // ─────────────────────────────────────────────────────────
+    public function rejectOnboarding(object $payload, string $doctorId): void {
+        AuthMiddleware::requireRole($payload, 'admin');
+
+        $input = $this->getInputData();
+
+        if (empty($input['reason'])) {
+            Response::error('Rejection reason is required', 400, 'VALIDATION_ERROR');
+            return;
+        }
+
+        try {
+            $profile = $this->doctorModel->findByUserId($doctorId);
+            if (!$profile) {
+                Response::notFound('Doctor profile not found');
+                return;
+            }
+
+            $onboardingModel = new \Backend\Models\Onboarding();
+
+            // Update verification status
+            $onboardingModel->updateVerificationStatus($doctorId, 'rejected', $input['reason']);
+
+            // Update profile
+            $this->doctorModel->update($doctorId, [
+                'verification_status' => 'rejected',
+                'reviewed_at' => date('Y-m-d H:i:s'),
+                'rejected_reason' => $input['reason'],
+            ]);
+
+            // Log action
+            $onboardingModel->logVerificationAction(
+                $doctorId,
+                'profile_rejected',
+                8,
+                'submitted',
+                'rejected',
+                null,
+                is_array($payload) ? ($payload['id'] ?? null) : ($payload->id ?? null),
+                $input['reason']
+            );
+
+            // Send rejection email
+            try {
+                $emailService = new \Backend\Utils\EmailService();
+                $emailService->sendOnboardingRejectionEmail($doctorId, $input['reason']);
+            } catch (\Exception $e) {
+                error_log('Failed to send rejection email: ' . $e->getMessage());
+            }
+
+            Response::success([
+                'doctorId' => $doctorId,
+                'verificationStatus' => 'rejected',
+                'message' => 'Doctor profile rejected',
+            ]);
+
+        } catch (\Exception $e) {
+            error_log('Admin reject onboarding: ' . $e->getMessage());
+            Response::error('Failed to reject onboarding', 500, 'SERVER_ERROR');
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // POST /api/admin/onboarding/{doctorId}/request-resubmission
+    // ─────────────────────────────────────────────────────────
+    public function requestResubmission(object $payload, string $doctorId): void {
+        AuthMiddleware::requireRole($payload, 'admin');
+
+        $input = $this->getInputData();
+
+        if (empty($input['reason'])) {
+            Response::error('Resubmission reason is required', 400, 'VALIDATION_ERROR');
+            return;
+        }
+
+        try {
+            $profile = $this->doctorModel->findByUserId($doctorId);
+            if (!$profile) {
+                Response::notFound('Doctor profile not found');
+                return;
+            }
+
+            $onboardingModel = new \Backend\Models\Onboarding();
+
+            // Update verification status
+            $onboardingModel->updateVerificationStatus($doctorId, 'resubmission_required', $input['reason']);
+
+            // Update profile
+            $this->doctorModel->update($doctorId, [
+                'verification_status' => 'resubmission_required',
+                'rejected_reason' => $input['reason'],
+            ]);
+
+            // Log action
+            $onboardingModel->logVerificationAction(
+                $doctorId,
+                'resubmission_requested',
+                8,
+                'submitted',
+                'resubmission_required',
+                null,
+                is_array($payload) ? ($payload['id'] ?? null) : ($payload->id ?? null),
+                $input['reason']
+            );
+
+            // Send resubmission email
+            try {
+                $emailService = new \Backend\Utils\EmailService();
+                $emailService->sendResubmissionRequestEmail($doctorId, $input['reason']);
+            } catch (\Exception $e) {
+                error_log('Failed to send resubmission email: ' . $e->getMessage());
+            }
+
+            Response::success([
+                'doctorId' => $doctorId,
+                'verificationStatus' => 'resubmission_required',
+                'message' => 'Doctor requested to resubmit profile',
+            ]);
+
+        } catch (\Exception $e) {
+            error_log('Admin request resubmission: ' . $e->getMessage());
+            Response::error('Failed to request resubmission', 500, 'SERVER_ERROR');
+        }
+    }
+
     private function getInputData(): array {
         $body = json_decode(file_get_contents('php://input'), true) ?? [];
         return array_merge($_POST, $body);

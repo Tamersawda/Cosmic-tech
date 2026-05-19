@@ -43,6 +43,17 @@ return function (string $method, string $path) {
     if ($normalizedPath === '' || $normalizedPath === false) $normalizedPath = '/';
 
     // ════════════════════════════════════════════════════
+    // ONBOARDING ROUTES  /api/doctors/onboarding/*
+    // ════════════════════════════════════════════════════
+    if (strpos($normalizedPath, '/onboarding') === 0) {
+        $payload = AuthMiddleware::authenticate();
+        $onboardingRouter = require __DIR__ . '/onboarding.php';
+        $onboardingRouter = new $onboardingRouter($method, $path, $payload);
+        $onboardingRouter->handle();
+        return;
+    }
+
+    // ════════════════════════════════════════════════════
     // QUALIFICATIONS  /api/doctors/{id}/qualifications[/{qid}]
     // ════════════════════════════════════════════════════
     if (preg_match('#^/([0-9a-f\-]+)/qualifications(?:/([0-9a-f\-]+))?$#i', $normalizedPath, $m)) {

@@ -85,16 +85,23 @@ if ($path === '' || $path === false) $path = '/';
 if ($path[0] !== '/') $path = '/' . $path;
 
 // -----------------------------
+// API Version Support
+// Strip /api/v1/ → /api/ so both versioned and unversioned routes work.
+// This keeps /api/* alive while enabling /api/v1/* as an alias.
+// -----------------------------
+$path = preg_replace('#^/api/v1/#', '/api/', $path);
+
+// -----------------------------
 // Routing (STRICT MATCHING)
 // ORDER MATTERS:
 //   1. /api/auth
 //   2. /api/clients
 //   3. /api/doctors
 //   4. /api/admin
-//   5. /api/available-slots       ← NEW
+//   5. /api/available-slots
 //   6. /api/consultations
 //   7. /api/appointments/{id}/messages  ← must come BEFORE /api/appointments
-//   8. /api/appointments           ← NEW (also handles /api/appointments/available-slots)
+//   8. /api/appointments
 //   9. /api/messages
 //  10. fallback
 // -----------------------------

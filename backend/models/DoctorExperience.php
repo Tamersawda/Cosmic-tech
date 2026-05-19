@@ -5,37 +5,70 @@ namespace Backend\Models;
 use Backend\Config\Database;
 use PDO;
 
-class DoctorExperience {
+/**
+ * DoctorExperience Model
+ *
+ * Manages the doctor_experiences table.
+ * Updated to support new onboarding fields: work_type, custom_work_type,
+ * proof_document_url, verification_status.
+ */
+class DoctorExperience
+{
     private PDO $db;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->db = Database::getInstance();
     }
 
-    public function create(array $data): string {
+    /**
+     * Create a new experience record.
+     *
+     * @param array $data Keys: doctor_id, company, role_title, employment_type,
+     *                    work_type, custom_work_type, currently_working,
+     *                    start_date, end_date, description, proof_document_url
+     * @return string UUID of the created record
+     */
+    public function create(array $data): string
+    {
         $stmt = $this->db->prepare('
             INSERT INTO doctor_experiences
-                (doctor_id, company, role_title, employment_type,
-                 currently_working, start_date, end_date, description)
+                (doctor_id, company, role_title, employment_type, work_type,
+                 custom_work_type, currently_working, start_date, end_date,
+                 description, proof_document_url)
             VALUES
-                (:doctor_id, :company, :role_title, :employment_type,
-                 :currently_working, :start_date, :end_date, :description)
+                (:doctor_id, :company, :role_title, :employment_type, :work_type,
+                 :custom_work_type, :currently_working, :start_date, :end_date,
+                 :description, :proof_document_url)
         ');
         $stmt->execute([
-            ':doctor_id'         => $data['doctor_id'],
-            ':company'           => $data['company'],
-            ':role_title'        => $data['role_title'],
-            ':employment_type'   => $data['employment_type'] ?? 'full_time',
-            ':currently_working' => $data['currently_working'] ? 1 : 0,
-            ':start_date'        => $data['start_date'],
-            ':end_date'          => $data['end_date'] ?? null,
-            ':description'       => $data['description'] ?? null,
+            ':doctor_id'           => $data['doctor_id'],
+            ':company'             => $data['company'],
+            ':role_title'          => $data['role_title'],
+            ':employment_type'     => $data['employment_type'] ?? 'full_time',
+            ':work_type'           => $data['work_type'] ?? 'hospital',
+            ':custom_work_type'    => $data['custom_work_type'] ?? null,
+            ':currently_working'   => (int)(!empty($data['currently_working'])),
+            ':start_date'          => $data['start_date'],
+            ':end_date'            => $data['end_date'] ?? null,
+            ':description'         => $data['description'] ?? null,
+            ':proof_document_url'  => $data['proof_document_url'] ?? null,
         ]);
 
         return $this->fetchLastId($data['doctor_id']);
     }
 
-    public function getByDoctorId(string $doctorId): array {
+    /**
+     * Get all experiences for a doctor, newest first.
+     * Alias: findByDoctor() (used by OnboardingExperiencesController)
+     */
+    public function findByDoctor(string $doctorId): array
+    {
+        return $this->getByDoctorId($doctorId);
+    }
+
+    public function getByDoctorId(string $doctorId): array
+    {
         $stmt = $this->db->prepare('
             SELECT * FROM doctor_experiences
             WHERE doctor_id = ?
@@ -45,17 +78,32 @@ class DoctorExperience {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getById(string $id): ?array {
+    /**
+     * Get a single experience by ID.
+     * Alias: findById() (used by OnboardingExperiencesController)
+     */
+    public function findById(string $id): ?array
+    {
+        return $this->getById($id);
+    }
+
+    public function getById(string $id): ?array
+    {
         $stmt = $this->db->prepare('SELECT * FROM doctor_experiences WHERE id = ?');
         $stmt->execute([$id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ?: null;
     }
 
-    public function update(string $id, array $data): bool {
+    /**
+     * Update specific fields of an experience record.
+     */
+    public function update(string $id, array $data): bool
+    {
         $allowed = [
-            'company', 'role_title', 'employment_type',
-            'currently_working', 'start_date', 'end_date', 'description',
+            'company', 'role_title', 'employment_type', 'work_type',
+            'custom_work_type', 'currently_working',
+            'start_date', 'end_date', 'description', 'proof_document_url',
         ];
         $sets   = [];
         $params = [];
@@ -72,11 +120,17 @@ class DoctorExperience {
         return $this->db->prepare($sql)->execute($params);
     }
 
-    public function delete(string $id): bool {
-        return $this->db->prepare('DELETE FROM doctor_experiences WHERE id = ?')->execute([$id]);
+    /**
+     * Delete an experience record by ID.
+     */
+    public function delete(string $id): bool
+    {
+        return $this->db->prepare('DELETE FROM doctor_experiences WHERE id = ?')
+                        ->execute([$id]);
     }
 
-    private function fetchLastId(string $doctorId): string {
+    private function fetchLastId(string $doctorId): string
+    {
         $stmt = $this->db->prepare('
             SELECT id FROM doctor_experiences
             WHERE doctor_id = ?
