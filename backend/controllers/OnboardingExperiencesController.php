@@ -123,7 +123,6 @@ class OnboardingExperiencesController
                 'currently_working' => $input['currentlyWorking'] ? 1 : 0,
                 'description' => $input['description'] ?? null,
                 'proof_document_url' => $proofUrl,
-                'employment_type' => $input['workType'],  // Legacy field
             ];
 
             $expId = $this->experienceModel->create($experienceData);

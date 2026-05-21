@@ -55,25 +55,25 @@ class OnboardingVerificationController
 
         $input = $this->getJsonInput();
 
-        // Normalize field aliases
-        // Frontend (canonical): rciCrrNumber, selfDeclarationAccepted
-        // Legacy fallback:       rciNumber,    selfDeclarationAgreed
-        if (!isset($input['rciNumber']) && isset($input['rciCrrNumber'])) {
-            $input['rciNumber'] = $input['rciCrrNumber'];
+        // Normalize field aliases - support both canonical and legacy names
+        // Canonical: rciCrrNumber, selfDeclarationAccepted
+        // Legacy:    rciNumber,    selfDeclarationAgreed
+        if (!isset($input['rciCrrNumber']) && isset($input['rciNumber'])) {
+            $input['rciCrrNumber'] = $input['rciNumber'];
         }
-        if (!isset($input['selfDeclarationAgreed']) && isset($input['selfDeclarationAccepted'])) {
-            $input['selfDeclarationAgreed'] = $input['selfDeclarationAccepted'];
+        if (!isset($input['selfDeclarationAccepted']) && isset($input['selfDeclarationAgreed'])) {
+            $input['selfDeclarationAccepted'] = $input['selfDeclarationAgreed'];
         }
 
         // Validation
         $rules = [
-            'registrationType'     => ['required', ['in', 'rci', 'none']],
-            'selfDeclarationAgreed'=> ['required', 'boolean'],
+            'registrationType'        => ['required', ['in', 'rci', 'none']],
+            'selfDeclarationAccepted' => ['required', 'boolean'],
         ];
 
         // If RCI, make number required
         if (($input['registrationType'] ?? '') === 'rci') {
-            $rules['rciNumber'] = ['required', 'string'];
+            $rules['rciCrrNumber'] = ['required', 'string'];
         }
 
         $validation = $this->validator->validate($input, $rules);
@@ -88,10 +88,8 @@ class OnboardingVerificationController
             $isRci = ($input['registrationType'] === 'rci');
             $data = [
                 'registration_type'         => $input['registrationType'],
-                'registration_number'       => $isRci ? ($input['rciNumber'] ?? null) : null,
-                'rci_crr_number'            => $isRci ? ($input['rciNumber'] ?? null) : null,
-                'rci_number'                => $isRci ? ($input['rciNumber'] ?? null) : null,
-                'self_declaration_accepted' => (int)(!empty($input['selfDeclarationAgreed'])),
+                'rci_crr_number'            => $isRci ? ($input['rciCrrNumber'] ?? null) : null,
+                'self_declaration_accepted' => (int)(!empty($input['selfDeclarationAccepted'])),
             ];
 
             if ($profile) {
@@ -166,21 +164,21 @@ class OnboardingVerificationController
             Response::success([
                 'registrationType'         => 'none',
                 'rciCrrNumber'             => null,
-                'rciNumber'                => null,
                 'rciCertificateUrl'        => null,
                 'selfDeclarationAccepted'  => false,
             ]);
             return;
         }
 
-        // Return both canonical and legacy field names
-        $rciNum = $profile['rci_crr_number'] ?? $profile['rci_number'] ?? $profile['registration_number'] ?? null;
+        // Return canonical field names (and legacy aliases for backward compatibility)
+        $rciNum = $profile['rci_crr_number'] ?? null;
         Response::success([
             'registrationType'         => $profile['registration_type'] ?? 'none',
             'rciCrrNumber'             => $rciNum,
             'rciNumber'                => $rciNum,          // Legacy alias
             'rciCertificateUrl'        => $profile['rci_certificate_url'] ?? null,
             'selfDeclarationAccepted'  => (bool)($profile['self_declaration_accepted'] ?? false),
+            'selfDeclarationAgreed'    => (bool)($profile['self_declaration_accepted'] ?? false),  // Legacy alias
         ]);
     }
 

@@ -78,19 +78,13 @@ class OnboardingPricingController
         try {
             $profile = $this->doctorModel->findByUserId($userId);
 
-            // Convert consultation duration to database format
-            $durationMap = [
-                '30min' => '30min',
-                '45min' => '45min',
-                '60min' => '60min',
-            ];
+            // Extract duration in minutes from string like "30min", "45min", "60min"
+            $durationMinutes = (int)str_replace('min', '', $input['consultationDuration']);
 
             $data = [
                 'session_price' => floatval($input['sessionPrice']),
-                'consultation_duration_minutes' => (int)str_replace('min', '', $input['consultationDuration']),
-                'consultation_duration' => $durationMap[$input['consultationDuration']] ?? '60min',
+                'consultation_duration_min' => $durationMinutes,
                 'followup_price' => isset($input['followUpPrice']) ? floatval($input['followUpPrice']) : null,
-                'video_rate' => floatval($input['sessionPrice']),  // Legacy field
             ];
 
             if ($profile) {
@@ -145,9 +139,13 @@ class OnboardingPricingController
             return;
         }
 
+        // Format duration back to string (e.g., "60min")
+        $durationMin = $profile['consultation_duration_min'] ?? 60;
+        $consultationDuration = $durationMin . 'min';
+
         Response::success([
-            'sessionPrice' => $profile['session_price'] ?? $profile['video_rate'],
-            'consultationDuration' => $profile['consultation_duration'] ?? '60min',
+            'sessionPrice' => $profile['session_price'],
+            'consultationDuration' => $consultationDuration,
             'followUpPrice' => $profile['followup_price'],
             'currency' => 'INR',  // Currently hardcoded for India
         ]);

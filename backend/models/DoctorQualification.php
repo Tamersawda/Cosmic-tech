@@ -15,17 +15,19 @@ class DoctorQualification {
     public function create(array $data): string {
         $stmt = $this->db->prepare('
             INSERT INTO doctor_qualifications
-                (doctor_id, title, degree, institution, year, document_path)
+                (doctor_id, qualification_name, specialization, passing_year, 
+                 certificate_url, verification_status)
             VALUES
-                (:doctor_id, :title, :degree, :institution, :year, :document_path)
+                (:doctor_id, :qualification_name, :specialization, :passing_year, 
+                 :certificate_url, :verification_status)
         ');
         $stmt->execute([
-            ':doctor_id'     => $data['doctor_id'],
-            ':title'         => $data['title'],
-            ':degree'        => $data['degree'] ?? null,
-            ':institution'   => $data['institution'] ?? null,
-            ':year'          => $data['year'] ?? null,
-            ':document_path' => $data['document_path'] ?? null,
+            ':doctor_id'           => $data['doctor_id'],
+            ':qualification_name'  => $data['qualification_name'] ?? $data['degree'] ?? null,
+            ':specialization'      => $data['specialization'] ?? null,
+            ':passing_year'        => $data['passing_year'] ?? $data['year'] ?? null,
+            ':certificate_url'     => $data['certificate_url'] ?? $data['document_path'] ?? null,
+            ':verification_status' => $data['verification_status'] ?? 'pending',
         ]);
 
         // For UUID primary keys MySQL won't expose lastInsertId() usefully.
@@ -43,6 +45,13 @@ class DoctorQualification {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Alias for getByDoctorId() for controller compatibility.
+     */
+    public function findByDoctor(string $doctorId): array {
+        return $this->getByDoctorId($doctorId);
+    }
+
     public function getById(string $id): ?array {
         $stmt = $this->db->prepare('SELECT * FROM doctor_qualifications WHERE id = ?');
         $stmt->execute([$id]);
@@ -50,16 +59,36 @@ class DoctorQualification {
         return $row ?: null;
     }
 
+    /**
+     * Alias for getById() for controller compatibility.
+     */
+    public function findById(string $id): ?array {
+        return $this->getById($id);
+    }
+
     public function update(string $id, array $data): bool {
-        $allowed = ['title', 'degree', 'institution', 'year', 'document_path'];
-        $sets    = [];
-        $params  = [];
-        foreach ($allowed as $col) {
-            if (array_key_exists($col, $data)) {
+        // Map legacy field names to canonical schema field names
+        $fieldMap = [
+            'degree' => 'qualification_name',
+            'year' => 'passing_year',
+            'document_path' => 'certificate_url',
+            'title' => 'qualification_name',
+        ];
+        
+        $allowed = ['qualification_name', 'specialization', 'passing_year', 
+                   'certificate_url', 'verification_status'];
+        $sets   = [];
+        $params = [];
+        
+        foreach ($data as $key => $value) {
+            // Resolve field name: use mapped name if key is legacy field, else use key if canonical
+            $col = $fieldMap[$key] ?? (in_array($key, $allowed) ? $key : null);
+            if ($col) {
                 $sets[]         = "$col = :$col";
-                $params[":$col"] = $data[$col];
+                $params[":$col"] = $value;
             }
         }
+        
         if (empty($sets)) return false;
 
         $params[':id'] = $id;

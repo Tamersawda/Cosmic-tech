@@ -24,20 +24,19 @@ class DoctorExperience
     /**
      * Create a new experience record.
      *
-     * @param array $data Keys: doctor_id, company, role_title, employment_type,
-     *                    work_type, custom_work_type, currently_working,
-     *                    start_date, end_date, description, proof_document_url
+     * @param array $data Keys: doctor_id, company, role_title, work_type, custom_work_type,
+     *                    currently_working, start_date, end_date, description, proof_document_url
      * @return string UUID of the created record
      */
     public function create(array $data): string
     {
         $stmt = $this->db->prepare('
             INSERT INTO doctor_experiences
-                (doctor_id, company, role_title, employment_type, work_type,
+                (doctor_id, company, role_title, work_type,
                  custom_work_type, currently_working, start_date, end_date,
                  description, proof_document_url)
             VALUES
-                (:doctor_id, :company, :role_title, :employment_type, :work_type,
+                (:doctor_id, :company, :role_title, :work_type,
                  :custom_work_type, :currently_working, :start_date, :end_date,
                  :description, :proof_document_url)
         ');
@@ -45,7 +44,6 @@ class DoctorExperience
             ':doctor_id'           => $data['doctor_id'],
             ':company'             => $data['company'],
             ':role_title'          => $data['role_title'],
-            ':employment_type'     => $data['employment_type'] ?? 'full_time',
             ':work_type'           => $data['work_type'] ?? 'hospital',
             ':custom_work_type'    => $data['custom_work_type'] ?? null,
             ':currently_working'   => (int)(!empty($data['currently_working'])),
@@ -101,7 +99,7 @@ class DoctorExperience
     public function update(string $id, array $data): bool
     {
         $allowed = [
-            'company', 'role_title', 'employment_type', 'work_type',
+            'company', 'role_title', 'work_type',
             'custom_work_type', 'currently_working',
             'start_date', 'end_date', 'description', 'proof_document_url',
         ];

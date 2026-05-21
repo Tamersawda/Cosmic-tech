@@ -509,12 +509,12 @@
                   "type": "text"
                 },
                 {
-                  "key": "instituteName",
-                  "value": "University of Harvard",
+                  "key": "specialization",
+                  "value": "Clinical & Cognitive Behavioral Therapy",
                   "type": "text"
                 },
                 {
-                  "key": "yearOfCompletion",
+                  "key": "passingYear",
                   "value": "2015",
                   "type": "text"
                 },
@@ -577,7 +577,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"degree\": \"Doctor of Philosophy (PhD) in Clinical Psychology\",\n  \"instituteName\": \"Harvard University\",\n  \"yearOfCompletion\": 2015\n}"
+              "raw": "{\n  \"degree\": \"Doctor of Philosophy (PhD) in Clinical Psychology\",\n  \"specialization\": \"Clinical & Cognitive Behavioral Therapy\",\n  \"passingYear\": 2015\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/doctors/onboarding/qualifications/{{qualificationId}}",
@@ -648,12 +648,7 @@
                   "type": "text"
                 },
                 {
-                  "key": "instituteName",
-                  "value": "Test Institute",
-                  "type": "text"
-                },
-                {
-                  "key": "yearOfCompletion",
+                  "key": "passingYear",
                   "value": "2015",
                   "type": "text"
                 },
@@ -704,7 +699,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"registrationNumber\": \"RCI-12345\",\n  \"registrationYear\": 2015,\n  \"registrationBody\": \"Indian Psychology Council\",\n  \"licenseDocument\": null,\n  \"selfDeclaration\": true\n}"
+              "raw": "{\n  \"registrationType\": \"rci\",\n  \"rciCrrNumber\": \"RCI-12345\",\n  \"selfDeclarationAccepted\": true\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/doctors/onboarding/professional-registration",
@@ -756,7 +751,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"registrationNumber\": \"RCI-12345\",\n  \"registrationYear\": 2015,\n  \"registrationBody\": \"Indian Psychology Council\",\n  \"selfDeclaration\": true\n}"
+              "raw": "{\n  \"registrationType\": \"rci\",\n  \"rciCrrNumber\": \"RCI-12345\",\n  \"selfDeclarationAccepted\": true\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/doctors/onboarding/verification",
@@ -800,7 +795,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"company\": \"City Mental Health Clinic\",\n  \"roleTitle\": \"Senior Clinical Psychologist\",\n  \"employmentType\": \"full_time\",\n  \"currentlyWorking\": true,\n  \"startDate\": \"2018-01-15\",\n  \"endDate\": null,\n  \"description\": \"Led adult therapy services, managed 30+ clients\"\n}"
+              "raw": "{\n  \"organization\": \"City Mental Health Clinic\",\n  \"role\": \"Senior Clinical Psychologist\",\n  \"workType\": \"clinic\",\n  \"currentlyWorking\": true,\n  \"startDate\": \"2018-01-15\",\n  \"endDate\": null,\n  \"description\": \"Led adult therapy services, managed 30+ clients\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/doctors/onboarding/work-experience",
@@ -842,7 +837,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"company\": \"Advanced Mental Health Center\",\n  \"roleTitle\": \"Lead Psychologist\",\n  \"currentlyWorking\": true,\n  \"description\": \"Led adult therapy services, managed 40+ clients, supervision role\"\n}"
+              "raw": "{\n  \"organization\": \"Advanced Mental Health Center\",\n  \"role\": \"Lead Psychologist\",\n  \"currentlyWorking\": true,\n  \"description\": \"Led adult therapy services, managed 40+ clients, supervision role\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/doctors/onboarding/work-experience/{{experienceId}}",
@@ -884,7 +879,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"company\": \"Private Practice\",\n  \"roleTitle\": \"Clinical Psychologist\",\n  \"employmentType\": \"self_employed\",\n  \"currentlyWorking\": true,\n  \"startDate\": \"2020-06-01\",\n  \"endDate\": null,\n  \"description\": \"Individual therapy practice\"\n}"
+              "raw": "{\n  \"organization\": \"Private Practice\",\n  \"role\": \"Clinical Psychologist\",\n  \"workType\": \"private_practice\",\n  \"currentlyWorking\": true,\n  \"startDate\": \"2020-06-01\",\n  \"endDate\": null,\n  \"description\": \"Individual therapy practice\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/doctors/onboarding/experiences",
@@ -919,7 +914,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"company\": \"Bad Hospital\",\n  \"roleTitle\": \"Doctor\",\n  \"employmentType\": \"full_time\",\n  \"currentlyWorking\": false,\n  \"startDate\": \"2020-01-01\"\n}"
+              "raw": "{\n  \"organization\": \"Bad Hospital\",\n  \"role\": \"Doctor\",\n  \"workType\": \"hospital\",\n  \"currentlyWorking\": false,\n  \"startDate\": \"2020-01-01\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/doctors/onboarding/work-experience",
@@ -961,7 +956,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"videoSessionFee\": 80,\n  \"chatSessionFee\": 50,\n  \"currency\": \"USD\",\n  \"sessionDurationMinutes\": 50,\n  \"availableForVideo\": true,\n  \"availableForChat\": true\n}"
+              "raw": "{\n  \"sessionPrice\": 80,\n  \"consultationDuration\": \"50min\",\n  \"followUpPrice\": 50,\n  \"currency\": \"USD\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/doctors/onboarding/session-fee",
@@ -1013,7 +1008,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"videoSessionFee\": 100,\n  \"chatSessionFee\": 60,\n  \"currency\": \"USD\",\n  \"sessionDurationMinutes\": 60\n}"
+              "raw": "{\n  \"sessionPrice\": 100,\n  \"consultationDuration\": \"60min\",\n  \"followUpPrice\": 60,\n  \"currency\": \"USD\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/doctors/onboarding/pricing",
@@ -1170,7 +1165,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"payoutMethod\": \"bank_transfer\",\n  \"bankAccountName\": \"Dr. Jane Smith\",\n  \"bankAccountNumber\": \"1234567890\",\n  \"bankRoutingNumber\": \"987654321\",\n  \"bankName\": \"First National Bank\",\n  \"bankCode\": \"ABC123\",\n  \"accountHolder\": \"Dr. Jane Smith\"\n}"
+              "raw": "{\n  \"accountHolderName\": \"Dr. Jane Smith\",\n  \"accountNumber\": \"1234567890\",\n  \"ifscCode\": \"HDFC0001234\",\n  \"bankName\": \"HDFC Bank\",\n  \"branchName\": \"New York Branch\",\n  \"panNumber\": \"ABCDE1234F\",\n  \"isGstRegistered\": false,\n  \"gstNumber\": null\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/doctors/onboarding/payout",

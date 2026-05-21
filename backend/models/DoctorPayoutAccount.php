@@ -29,12 +29,12 @@ class DoctorPayoutAccount
 
         $stmt = $this->db->prepare('
             INSERT INTO doctor_payout_accounts
-            (doctor_id, account_holder_name, account_number, ifsc_code, bank_name, 
-             branch_name, pan_number, is_gst_registered, gst_number, is_primary, is_active)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (id, doctor_id, account_holder_name, account_number, ifsc_code, bank_name, 
+             branch_name, pan_number, is_gst_registered, gst_number, is_primary, 
+             verification_status, created_at, updated_at)
+            VALUES (UUID(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         ');
 
-        $id = \Backend\Utils\UUID::generate();
         $success = $stmt->execute([
             $data['doctor_id'],
             $data['account_holder_name'],
@@ -46,10 +46,22 @@ class DoctorPayoutAccount
             $data['is_gst_registered'] ? 1 : 0,
             $data['gst_number'] ?? null,
             $isPrimary ? 1 : 0,
-            1  // is_active
+            $data['verification_status'] ?? 'pending',
         ]);
 
-        return $success ? $id : null;
+        if ($success) {
+            // Return the inserted ID by querying the most recent insert
+            $stmt = $this->db->prepare('
+                SELECT id FROM doctor_payout_accounts
+                WHERE doctor_id = ?
+                ORDER BY created_at DESC
+                LIMIT 1
+            ');
+            $stmt->execute([$data['doctor_id']]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result['id'] ?? null;
+        }
+        return null;
     }
 
     /**
@@ -71,7 +83,7 @@ class DoctorPayoutAccount
     {
         $stmt = $this->db->prepare('
             SELECT * FROM doctor_payout_accounts
-            WHERE doctor_id = ? AND is_primary = 1 AND is_active = 1
+            WHERE doctor_id = ? AND is_primary = 1
             LIMIT 1
         ');
         $stmt->execute([$doctorId]);
@@ -99,7 +111,7 @@ class DoctorPayoutAccount
     {
         $stmt = $this->db->prepare('
             SELECT COUNT(*) as count FROM doctor_payout_accounts
-            WHERE doctor_id = ? AND is_active = 1
+            WHERE doctor_id = ?
         ');
         $stmt->execute([$doctorId]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -142,10 +154,10 @@ class DoctorPayoutAccount
             if (in_array($key, [
                 'account_holder_name', 'account_number', 'ifsc_code', 'bank_name',
                 'branch_name', 'pan_number', 'is_gst_registered', 'gst_number',
-                'verification_status', 'rejection_reason', 'is_primary', 'is_active'
+                'verification_status', 'rejection_reason', 'is_primary'
             ])) {
-                $setClause[] = "$key = ?";
-                $params[] = $value;
+                $setClause[] = "$key = :$key";
+                $params[":$key"] = $value;
             }
         }
 
@@ -153,16 +165,11 @@ class DoctorPayoutAccount
             return false;
         }
 
-        $params[] = $id;
-        $setClause[] = 'updated_at = UTC_TIMESTAMP()';
+        $params[':id'] = $id;
+        $setClause[] = 'updated_at = CURRENT_TIMESTAMP';
 
-        $stmt = $this->db->prepare('
-            UPDATE doctor_payout_accounts
-            SET ' . implode(', ', $setClause) . '
-            WHERE id = ?
-        ');
-
-        return $stmt->execute($params);
+        $sql = 'UPDATE doctor_payout_accounts SET ' . implode(', ', $setClause) . ' WHERE id = :id';
+        return $this->db->prepare($sql)->execute($params);
     }
 
     /**
@@ -172,7 +179,7 @@ class DoctorPayoutAccount
     {
         $stmt = $this->db->prepare('
             UPDATE doctor_payout_accounts
-            SET verification_status = "verified", updated_at = UTC_TIMESTAMP()
+            SET verification_status = "verified", updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
         ');
         return $stmt->execute([$id]);

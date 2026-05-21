@@ -55,7 +55,6 @@ class OnboardingQualificationsController
         // Validation
         $rules = [
             'degree' => ['required', 'string'],
-            'institution' => ['required', 'string'],
             'specialization' => ['nullable', 'string'],
             'passingYear' => ['required', 'numeric'],
         ];
@@ -95,13 +94,11 @@ class OnboardingQualificationsController
             // Create qualification record
             $qualificationData = [
                 'doctor_id' => $userId,
-                'degree' => $input['degree'],
-                'institution' => $input['institution'],
-                'specialization' => $input['specialization'] ?? null,
-                'year' => $year,
-                'certificate_url' => $certificateUrl,
-                'title' => $input['degree'],  // Legacy field
                 'qualification_name' => $input['degree'],
+                'specialization' => $input['specialization'] ?? null,
+                'passing_year' => $year,
+                'certificate_url' => $certificateUrl,
+                'verification_status' => 'pending',
             ];
 
             $qualId = $this->qualificationModel->create($qualificationData);
@@ -146,10 +143,9 @@ class OnboardingQualificationsController
         $formatted = array_map(function($qual) {
             return [
                 'id' => $qual['id'],
-                'degree' => $qual['degree'] ?? $qual['title'] ?? null,
-                'institution' => $qual['institution'],
+                'degree' => $qual['qualification_name'],
                 'specialization' => $qual['specialization'],
-                'passingYear' => $qual['year'],
+                'passingYear' => $qual['passing_year'],
                 'certificateUrl' => $qual['certificate_url'],
                 'verificationStatus' => $qual['verification_status'] ?? 'pending',
                 'createdAt' => $qual['created_at'],
@@ -197,11 +193,7 @@ class OnboardingQualificationsController
             $updateData = [];
 
             if (isset($input['degree'])) {
-                $updateData['degree'] = $input['degree'];
-                $updateData['title'] = $input['degree'];
-            }
-            if (isset($input['institution'])) {
-                $updateData['institution'] = $input['institution'];
+                $updateData['qualification_name'] = $input['degree'];
             }
             if (isset($input['specialization'])) {
                 $updateData['specialization'] = $input['specialization'];
@@ -212,7 +204,7 @@ class OnboardingQualificationsController
                     Response::error('Invalid passing year', 400);
                     return;
                 }
-                $updateData['year'] = $year;
+                $updateData['passing_year'] = $year;
             }
 
             if (!empty($updateData)) {
