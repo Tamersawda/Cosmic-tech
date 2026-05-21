@@ -31,8 +31,8 @@ class DoctorPayoutAccount
             INSERT INTO doctor_payout_accounts
             (id, doctor_id, account_holder_name, account_number, ifsc_code, bank_name, 
              branch_name, pan_number, is_gst_registered, gst_number, is_primary, 
-             verification_status, created_at, updated_at)
-            VALUES (UUID(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+             terms_consent, verification_status, created_at, updated_at)
+            VALUES (UUID(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         ');
 
         $success = $stmt->execute([
@@ -46,6 +46,7 @@ class DoctorPayoutAccount
             $data['is_gst_registered'] ? 1 : 0,
             $data['gst_number'] ?? null,
             $isPrimary ? 1 : 0,
+            $data['terms_consent'] ?? $data['termsConsent'] ?? false,
             $data['verification_status'] ?? 'pending',
         ]);
 
@@ -154,7 +155,7 @@ class DoctorPayoutAccount
             if (in_array($key, [
                 'account_holder_name', 'account_number', 'ifsc_code', 'bank_name',
                 'branch_name', 'pan_number', 'is_gst_registered', 'gst_number',
-                'verification_status', 'rejection_reason', 'is_primary'
+                'terms_consent', 'verification_status', 'rejection_reason', 'is_primary'
             ])) {
                 $setClause[] = "$key = :$key";
                 $params[":$key"] = $value;

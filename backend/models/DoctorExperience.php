@@ -40,10 +40,13 @@ class DoctorExperience
                  :custom_work_type, :currently_working, :start_date, :end_date,
                  :description, :proof_document_url)
         ');
+        // Support canonical names: organization→company, role→role_title
+        $company = $data['company'] ?? $data['organization'] ?? null;
+        $roleTitle = $data['role_title'] ?? $data['role'] ?? null;
         $stmt->execute([
             ':doctor_id'           => $data['doctor_id'],
-            ':company'             => $data['company'],
-            ':role_title'          => $data['role_title'],
+            ':company'             => $company,
+            ':role_title'          => $roleTitle,
             ':work_type'           => $data['work_type'] ?? 'hospital',
             ':custom_work_type'    => $data['custom_work_type'] ?? null,
             ':currently_working'   => (int)(!empty($data['currently_working'])),
@@ -95,6 +98,7 @@ class DoctorExperience
 
     /**
      * Update specific fields of an experience record.
+     * Supports both canonical names (organization, role) and legacy names (company, role_title)
      */
     public function update(string $id, array $data): bool
     {
@@ -103,6 +107,13 @@ class DoctorExperience
             'custom_work_type', 'currently_working',
             'start_date', 'end_date', 'description', 'proof_document_url',
         ];
+        // Handle canonical name aliases
+        if (isset($data['organization']) && !isset($data['company'])) {
+            $data['company'] = $data['organization'];
+        }
+        if (isset($data['role']) && !isset($data['role_title'])) {
+            $data['role_title'] = $data['role'];
+        }
         $sets   = [];
         $params = [];
         foreach ($allowed as $col) {

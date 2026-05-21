@@ -15,15 +15,16 @@ class DoctorQualification {
     public function create(array $data): string {
         $stmt = $this->db->prepare('
             INSERT INTO doctor_qualifications
-                (doctor_id, qualification_name, specialization, passing_year, 
+                (doctor_id, qualification_name, institution, specialization, passing_year, 
                  certificate_url, verification_status)
             VALUES
-                (:doctor_id, :qualification_name, :specialization, :passing_year, 
+                (:doctor_id, :qualification_name, :institution, :specialization, :passing_year, 
                  :certificate_url, :verification_status)
         ');
         $stmt->execute([
             ':doctor_id'           => $data['doctor_id'],
             ':qualification_name'  => $data['qualification_name'] ?? $data['degree'] ?? null,
+            ':institution'         => $data['institution'] ?? $data['institute_name'] ?? null,
             ':specialization'      => $data['specialization'] ?? null,
             ':passing_year'        => $data['passing_year'] ?? $data['year'] ?? null,
             ':certificate_url'     => $data['certificate_url'] ?? $data['document_path'] ?? null,
@@ -75,7 +76,7 @@ class DoctorQualification {
             'title' => 'qualification_name',
         ];
         
-        $allowed = ['qualification_name', 'specialization', 'passing_year', 
+        $allowed = ['qualification_name', 'institution', 'specialization', 'passing_year', 
                    'certificate_url', 'verification_status'];
         $sets   = [];
         $params = [];

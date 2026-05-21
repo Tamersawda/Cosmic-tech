@@ -15,9 +15,15 @@ require_once __DIR__ . '/../utils/Validator.php';
 /**
  * OnboardingPricingController
  * Handles Step 6: Session Pricing
- * - Session price/tier
- * - Consultation duration
- * - Follow-up price
+ * 
+ * Blueprint (Contract-Compliant):
+ * - sessionFeeTier: ENUM(799, 999, 1499, 1999, 2499)
+ * - pricingJustification: TEXT
+ * 
+ * Deprecated (Phase 3 removal):
+ * - sessionPrice (raw value)
+ * - followUpPrice (deprecated)
+ * - consultationDuration (moved to doctor_profiles.consultation_duration)
  */
 class OnboardingPricingController
 {
@@ -33,8 +39,18 @@ class OnboardingPricingController
     }
 
     /**
-     * POST /api/doctors/onboarding/pricing
-     * Save pricing information
+     * POST /api/doctors/onboarding/session-fee
+     * Save pricing information (Blueprint-compliant)
+     * 
+     * Request (Canonical):
+     * {
+     *   "sessionFeeTier": "999",         // ENUM: 799|999|1499|1999|2499
+     *   "pricingJustification": "..."    // TEXT: why this tier
+     * }
+     * 
+     * Backward compatibility:
+     * - Accepts legacy "sessionPrice" + "followUpPrice" (ignored, response uses tier)
+     * - Accepts legacy "consultationDuration" (ignored, managed separately)
      */
     public function savePricing($user)
     {
@@ -46,12 +62,28 @@ class OnboardingPricingController
 
         $input = $this->getJsonInput();
 
-        // Validation
+        // Backward compatibility: accept legacy field names but normalize to canonical
+        if (!isset($input['sessionFeeTier']) && isset($input['sessionPrice'])) {
+            // Legacy: convert numeric sessionPrice to nearest tier
+            // For now, we still accept it but validate as tier
+            $price = floatval($input['sessionPrice']);
+            if ($price < 900) {
+                $input['sessionFeeTier'] = '799';
+            } elseif ($price < 1250) {
+                $input['sessionFeeTier'] = '999';
+            } elseif ($price < 1750) {
+                $input['sessionFeeTier'] = '1499';
+            } elseif ($price < 2250) {
+                $input['sessionFeeTier'] = '1999';
+            } else {
+                $input['sessionFeeTier'] = '2499';
+            }
+        }
+
+        // Blueprint validation: only tier + justification required
         $rules = [
-            'sessionPrice' => ['required', 'numeric'],
-            'consultationDuration' => ['required', ['in', '30min', '45min', '60min']],
-            'followUpPrice' => ['nullable', 'numeric'],
-            'currency' => ['required', 'string'],
+            'sessionFeeTier'           => ['required', ['in', '799', '999', '1499', '1999', '2499']],
+            'pricingJustification'     => ['required', 'string'],
         ];
 
         $validation = $this->validator->validate($input, $rules);
@@ -60,17 +92,10 @@ class OnboardingPricingController
             return;
         }
 
-        // Validate prices
-        if (!$this->validator->validateSessionPrice($input['sessionPrice'])) {
+        // Additional validation: pricingJustification length
+        if (strlen($input['pricingJustification']) < 10) {
             Response::error('Validation failed', 400, 'VALIDATION_ERROR', [
-                'sessionPrice' => 'Session price must be a positive number up to 99999.99'
-            ]);
-            return;
-        }
-
-        if (isset($input['followUpPrice']) && !$this->validator->validateSessionPrice($input['followUpPrice'])) {
-            Response::error('Validation failed', 400, 'VALIDATION_ERROR', [
-                'followUpPrice' => 'Follow-up price must be a positive number up to 99999.99'
+                'pricingJustification' => 'Pricing justification must be at least 10 characters'
             ]);
             return;
         }
@@ -78,13 +103,9 @@ class OnboardingPricingController
         try {
             $profile = $this->doctorModel->findByUserId($userId);
 
-            // Extract duration in minutes from string like "30min", "45min", "60min"
-            $durationMinutes = (int)str_replace('min', '', $input['consultationDuration']);
-
             $data = [
-                'session_price' => floatval($input['sessionPrice']),
-                'consultation_duration_min' => $durationMinutes,
-                'followup_price' => isset($input['followUpPrice']) ? floatval($input['followUpPrice']) : null,
+                'session_fee_tier'        => $input['sessionFeeTier'],
+                'pricing_justification'   => $input['pricingJustification'],
             ];
 
             if ($profile) {
@@ -106,6 +127,8 @@ class OnboardingPricingController
 
             Response::success([
                 'message' => 'Pricing information saved successfully',
+                'sessionFeeTier' => $input['sessionFeeTier'],
+                'pricingJustification' => $input['pricingJustification'],
                 'step' => 6,
                 'nextStep' => 7,
             ], 200);
@@ -116,8 +139,14 @@ class OnboardingPricingController
     }
 
     /**
-     * GET /api/doctors/onboarding/pricing
-     * Retrieve saved pricing information
+     * GET /api/doctors/onboarding/session-fee
+     * Retrieve saved pricing information (Blueprint-compliant)
+     * 
+     * Response (Canonical only):
+     * {
+     *   "sessionFeeTier": "999",
+     *   "pricingJustification": "..."
+     * }
      */
     public function getPricing($user)
     {
@@ -131,23 +160,16 @@ class OnboardingPricingController
 
         if (!$profile) {
             Response::success([
-                'sessionPrice' => null,
-                'consultationDuration' => '60min',
-                'followUpPrice' => null,
-                'currency' => 'INR',
+                'sessionFeeTier' => null,
+                'pricingJustification' => null,
             ]);
             return;
         }
 
-        // Format duration back to string (e.g., "60min")
-        $durationMin = $profile['consultation_duration_min'] ?? 60;
-        $consultationDuration = $durationMin . 'min';
-
+        // Return ONLY Blueprint fields (no legacy fields)
         Response::success([
-            'sessionPrice' => $profile['session_price'],
-            'consultationDuration' => $consultationDuration,
-            'followUpPrice' => $profile['followup_price'],
-            'currency' => 'INR',  // Currently hardcoded for India
+            'sessionFeeTier' => $profile['session_fee_tier'] ?? null,
+            'pricingJustification' => $profile['pricing_justification'] ?? null,
         ]);
     }
 

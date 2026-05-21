@@ -65,21 +65,44 @@ class OnboardingVerificationController
             $input['selfDeclarationAccepted'] = $input['selfDeclarationAgreed'];
         }
 
-        // Validation
+        // Validation based on Blueprint rules
+        $registrationType = $input['registrationType'] ?? '';
+        
+        // Base validation
         $rules = [
-            'registrationType'        => ['required', ['in', 'rci', 'none']],
-            'selfDeclarationAccepted' => ['required', 'boolean'],
+            'registrationType' => ['required', ['in', 'rci', 'none']],
         ];
 
-        // If RCI, make number required
-        if (($input['registrationType'] ?? '') === 'rci') {
+        // Blueprint Rule 1: If registrationType='rci'
+        //   → rciCrrNumber (required)
+        //   → rciCertificate file upload (required)
+        //   → selfDeclarationAccepted (not required)
+        if ($registrationType === 'rci') {
             $rules['rciCrrNumber'] = ['required', 'string'];
+            // Certificate file check done after validation
+        }
+        // Blueprint Rule 2: If registrationType='none'
+        //   → selfDeclarationAccepted=true (required)
+        //   → rciCrrNumber (not required)
+        //   → rciCertificate (not required)
+        elseif ($registrationType === 'none') {
+            $rules['selfDeclarationAccepted'] = ['required', 'boolean'];
         }
 
         $validation = $this->validator->validate($input, $rules);
         if (!$validation['valid']) {
             Response::error('Validation failed', 400, 'VALIDATION_ERROR', $validation['errors']);
             return;
+        }
+
+        // Additional Blueprint validation: RCI must have certificate upload
+        if ($registrationType === 'rci') {
+            if (!isset($_FILES['rciCertificate']) || $_FILES['rciCertificate']['error'] === UPLOAD_ERR_NO_FILE) {
+                Response::error('Validation failed', 400, 'VALIDATION_ERROR', [
+                    'rciCertificate' => 'RCI certificate upload is required when registrationType is "rci"'
+                ]);
+                return;
+            }
         }
 
         try {

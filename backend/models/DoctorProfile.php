@@ -145,6 +145,8 @@ class DoctorProfile {
                 video_rate            = ?,
                 consultation_duration = ?,
                 buffer_time           = ?,
+                session_fee_tier      = ?,
+                pricing_justification = ?,
                 updated_at            = UTC_TIMESTAMP()
             WHERE user_id = ?
         ');
@@ -170,6 +172,8 @@ class DoctorProfile {
                 $data['videoRate']           ?? null,
                 $data['consultationDuration'] ?? '60min',
                 $data['bufferTime']          ?? '10min',
+                $data['sessionFeeTier']      ?? null,
+                $data['pricingJustification'] ?? null,
                 $userId,
             ]);
         } catch (\Exception $e) {

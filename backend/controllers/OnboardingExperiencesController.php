@@ -77,6 +77,14 @@ class OnboardingExperiencesController
             return;
         }
 
+        // Blueprint Rule: If workType='other', customWorkType is required
+        if ($input['workType'] === 'other' && empty($input['customWorkType'])) {
+            Response::error('Validation failed', 400, 'VALIDATION_ERROR', [
+                'customWorkType' => 'Custom work type is required when workType is "other"'
+            ]);
+            return;
+        }
+
         // Validate dates
         $startDate = strtotime($input['startDate']);
         $endDate = $input['endDate'] ? strtotime($input['endDate']) : null;

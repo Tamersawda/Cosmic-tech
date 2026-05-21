@@ -52,9 +52,11 @@ class OnboardingQualificationsController
 
         $input = $this->getJsonInput();
 
-        // Validation
+        // Blueprint validation: requires degree (qualification_name), institution, passing_year
+        // Accepts backward compatibility: 'degree' (canonical: 'qualification_name')
         $rules = [
-            'degree' => ['required', 'string'],
+            'degree' => ['required', 'string'],              // Alias for qualification_name
+            'institution' => ['required', 'string'],         // NEW: Blueprint requirement
             'specialization' => ['nullable', 'string'],
             'passingYear' => ['required', 'numeric'],
         ];
@@ -95,6 +97,7 @@ class OnboardingQualificationsController
             $qualificationData = [
                 'doctor_id' => $userId,
                 'qualification_name' => $input['degree'],
+                'institution' => $input['institution'],  // NEW: Blueprint requirement
                 'specialization' => $input['specialization'] ?? null,
                 'passing_year' => $year,
                 'certificate_url' => $certificateUrl,
@@ -139,16 +142,16 @@ class OnboardingQualificationsController
 
         $qualifications = $this->qualificationModel->findByDoctor($userId);
 
-        // Transform to frontend format
+        // Transform to Blueprint format (canonical fields only)
         $formatted = array_map(function($qual) {
             return [
                 'id' => $qual['id'],
-                'degree' => $qual['qualification_name'],
+                'qualificationName' => $qual['qualification_name'],
+                'institution' => $qual['institution'],  // NEW: Blueprint field
                 'specialization' => $qual['specialization'],
                 'passingYear' => $qual['passing_year'],
                 'certificateUrl' => $qual['certificate_url'],
                 'verificationStatus' => $qual['verification_status'] ?? 'pending',
-                'createdAt' => $qual['created_at'],
             ];
         }, $qualifications);
 

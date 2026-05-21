@@ -46,7 +46,7 @@ class OnboardingPayoutController
 
         $input = $this->getJsonInput();
 
-        // Validation
+        // Validation (Blueprint-compliant)
         $rules = [
             'accountHolderName' => ['required', 'string'],
             'accountNumber' => ['required', 'string'],
@@ -56,11 +56,20 @@ class OnboardingPayoutController
             'panNumber' => ['required', 'string'],
             'isGstRegistered' => ['required', 'boolean'],
             'gstNumber' => ['nullable', 'string'],
+            'termsConsent' => ['required', 'boolean'],  // NEW: Blueprint requirement
         ];
 
         $validation = $this->validator->validate($input, $rules);
         if (!$validation['valid']) {
             Response::error('Validation failed', 400, 'VALIDATION_ERROR', $validation['errors']);
+            return;
+        }
+
+        // Additional Blueprint validation: termsConsent must be true
+        if (!$input['termsConsent']) {
+            Response::error('Validation failed', 400, 'VALIDATION_ERROR', [
+                'termsConsent' => 'You must accept the terms and conditions to proceed'
+            ]);
             return;
         }
 
@@ -124,6 +133,7 @@ class OnboardingPayoutController
                 'pan_number' => strtoupper($input['panNumber']),
                 'is_gst_registered' => $input['isGstRegistered'],
                 'gst_number' => $input['isGstRegistered'] ? strtoupper($input['gstNumber']) : null,
+                'terms_consent' => (int)$input['termsConsent'],  // NEW: Blueprint field
                 'is_primary' => true,
             ];
 
@@ -190,6 +200,7 @@ class OnboardingPayoutController
                 'panNumber' => null,
                 'isGstRegistered' => false,
                 'gstNumber' => null,
+                'termsConsent' => false,  // NEW: Blueprint field
             ]);
             return;
         }
@@ -204,6 +215,7 @@ class OnboardingPayoutController
             'panNumber' => $account['pan_number'],
             'isGstRegistered' => (bool)$account['is_gst_registered'],
             'gstNumber' => $account['gst_number'],
+            'termsConsent' => (bool)($account['terms_consent'] ?? false),  // NEW: Blueprint field
             'verificationStatus' => $account['verification_status'],
         ]);
     }

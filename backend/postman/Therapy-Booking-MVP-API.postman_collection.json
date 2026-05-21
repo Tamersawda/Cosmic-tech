@@ -509,6 +509,11 @@
                   "type": "text"
                 },
                 {
+                  "key": "institution",
+                  "value": "Stanford University",
+                  "type": "text"
+                },
+                {
                   "key": "specialization",
                   "value": "Clinical & Cognitive Behavioral Therapy",
                   "type": "text"
@@ -519,7 +524,7 @@
                   "type": "text"
                 },
                 {
-                  "key": "document",
+                  "key": "certificate",
                   "type": "file",
                   "src": ""
                 }
@@ -956,7 +961,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"sessionPrice\": 80,\n  \"consultationDuration\": \"50min\",\n  \"followUpPrice\": 50,\n  \"currency\": \"USD\"\n}"
+              "raw": "{\n  \"sessionFeeTier\": \"999\",\n  \"pricingJustification\": \"Based on my experience level and market research in my area\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/doctors/onboarding/session-fee",
@@ -1008,7 +1013,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"sessionPrice\": 100,\n  \"consultationDuration\": \"60min\",\n  \"followUpPrice\": 60,\n  \"currency\": \"USD\"\n}"
+              "raw": "{\n  \"sessionFeeTier\": \"1499\",\n  \"pricingJustification\": \"Premium tier based on advanced training and client feedback\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/doctors/onboarding/pricing",
@@ -1165,7 +1170,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"accountHolderName\": \"Dr. Jane Smith\",\n  \"accountNumber\": \"1234567890\",\n  \"ifscCode\": \"HDFC0001234\",\n  \"bankName\": \"HDFC Bank\",\n  \"branchName\": \"New York Branch\",\n  \"panNumber\": \"ABCDE1234F\",\n  \"isGstRegistered\": false,\n  \"gstNumber\": null\n}"
+              "raw": "{\n  \"accountHolderName\": \"Dr. Jane Smith\",\n  \"accountNumber\": \"1234567890\",\n  \"ifscCode\": \"HDFC0001234\",\n  \"bankName\": \"HDFC Bank\",\n  \"branchName\": \"New York Branch\",\n  \"panNumber\": \"ABCDE1234F\",\n  \"isGstRegistered\": false,\n  \"gstNumber\": null,\n  \"termsConsent\": true\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/doctors/onboarding/payout",
@@ -1667,6 +1672,423 @@
               "path": ["api", "clients", "setup"]
             }
           }
+        },
+        {
+          "name": "[NEGATIVE] Add Qualification – missing institution",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                  "const d = pm.response.json();",
+                  "pm.test('Error mentions institution', () => pm.expect(d.error || d.message).to.include('institution' || 'Institution'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "degree",
+                  "value": "Bachelor's Degree",
+                  "type": "text"
+                },
+                {
+                  "key": "passingYear",
+                  "value": "2015",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors/onboarding/qualifications",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctors", "onboarding", "qualifications"]
+            }
+          }
+        },
+        {
+          "name": "[NEGATIVE] Save Pricing – invalid session fee tier",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                  "const d = pm.response.json();",
+                  "pm.test('Error mentions invalid tier', () => pm.expect(d.error || d.message || d.data).to.include('tier' || 'Invalid'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionFeeTier\": \"500\",\n  \"pricingJustification\": \"This tier value is invalid\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors/onboarding/session-fee",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctors", "onboarding", "session-fee"]
+            }
+          }
+        },
+        {
+          "name": "[NEGATIVE] Save Pricing – justification too short",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                  "const d = pm.response.json();",
+                  "pm.test('Error about justification', () => pm.expect(d.error || d.message || d.data).to.include('justification' || 'characters' || '10'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionFeeTier\": \"999\",\n  \"pricingJustification\": \"Too short\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors/onboarding/session-fee",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctors", "onboarding", "session-fee"]
+            }
+          }
+        },
+        {
+          "name": "[NEGATIVE] Save Payout – missing termsConsent",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                  "const d = pm.response.json();",
+                  "pm.test('Error mentions terms or consent', () => pm.expect(d.error || d.message).to.include('terms' || 'consent'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountHolderName\": \"Dr. Test\",\n  \"accountNumber\": \"1234567890\",\n  \"ifscCode\": \"HDFC0001234\",\n  \"bankName\": \"HDFC Bank\",\n  \"branchName\": \"Branch\",\n  \"panNumber\": \"ABCDE1234F\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors/onboarding/payout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctors", "onboarding", "payout"]
+            }
+          }
+        },
+        {
+          "name": "[NEGATIVE] Save Payout – termsConsent=false",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountHolderName\": \"Dr. Test\",\n  \"accountNumber\": \"1234567890\",\n  \"ifscCode\": \"HDFC0001234\",\n  \"bankName\": \"HDFC\",\n  \"branchName\": \"Branch\",\n  \"panNumber\": \"ABCDE1234F\",\n  \"termsConsent\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors/onboarding/payout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctors", "onboarding", "payout"]
+            }
+          }
+        },
+        {
+          "name": "[NEGATIVE] Add Experience – missing endDate for past work",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"organization\": \"Past Clinic\",\n  \"role\": \"Consultant\",\n  \"workType\": \"clinic\",\n  \"currentlyWorking\": false,\n  \"startDate\": \"2018-01-01\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors/onboarding/work-experience",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctors", "onboarding", "work-experience"]
+            }
+          }
+        },
+        {
+          "name": "[NEGATIVE] Add Experience – workType='other' without customWorkType",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                  "const d = pm.response.json();",
+                  "pm.test('Error mentions custom work type', () => pm.expect(d.error || d.message).to.include('custom' || 'workType'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"organization\": \"Unknown Org\",\n  \"role\": \"Consultant\",\n  \"workType\": \"other\",\n  \"currentlyWorking\": true,\n  \"startDate\": \"2024-01-01\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors/onboarding/work-experience",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctors", "onboarding", "work-experience"]
+            }
+          }
+        },
+        {
+          "name": "[NEGATIVE] Save RCI Verification – missing certificate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                  "const d = pm.response.json();",
+                  "pm.test('Error mentions RCI certificate', () => pm.expect(d.error || d.message).to.include('RCI' || 'certificate'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"registrationType\": \"rci\",\n  \"rciCrrNumber\": \"RCI-12345\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors/onboarding/verification",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctors", "onboarding", "verification"]
+            }
+          }
+        },
+        {
+          "name": "[NEGATIVE] Save 'none' Registration – missing declaration",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                  "const d = pm.response.json();",
+                  "pm.test('Error mentions self-declaration', () => pm.expect(d.error || d.message).to.include('declaration' || 'accepted'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"registrationType\": \"none\",\n  \"selfDeclarationAccepted\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors/onboarding/verification",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctors", "onboarding", "verification"]
+            }
+          }
+        },
+        {
+          "name": "[NEGATIVE] API call – Missing Authorization header",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('401 Unauthorized', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors/onboarding/basic-info",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctors", "onboarding", "basic-info"]
+            }
+          }
+        },
+        {
+          "name": "[NEGATIVE] API call – Invalid JWT token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('401 Unauthorized', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer INVALID_TOKEN_12345"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors/onboarding/basic-info",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctors", "onboarding", "basic-info"]
+            }
+          }
+        },
+        {
+          "name": "[NEGATIVE] API call – Non-existent resource",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('404 Not Found', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors/onboarding/qualifications/non-existent-id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctors", "onboarding", "qualifications", "non-existent-id"]
+            }
+          }
+        }
         }
       ]
     }
