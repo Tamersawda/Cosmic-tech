@@ -15,19 +15,18 @@ class DoctorQualification {
     public function create(array $data): string {
         $stmt = $this->db->prepare('
             INSERT INTO doctor_qualifications
-                (doctor_id, qualification_name, institution, specialization, passing_year, 
+                (doctor_id, qualification_name, institution, passing_year, 
                  certificate_url, verification_status)
             VALUES
-                (:doctor_id, :qualification_name, :institution, :specialization, :passing_year, 
+                (:doctor_id, :qualification_name, :institution, :passing_year, 
                  :certificate_url, :verification_status)
         ');
         $stmt->execute([
             ':doctor_id'           => $data['doctor_id'],
-            ':qualification_name'  => $data['qualification_name'] ?? $data['degree'] ?? null,
-            ':institution'         => $data['institution'] ?? $data['institute_name'] ?? null,
-            ':specialization'      => $data['specialization'] ?? null,
-            ':passing_year'        => $data['passing_year'] ?? $data['year'] ?? null,
-            ':certificate_url'     => $data['certificate_url'] ?? $data['document_path'] ?? null,
+            ':qualification_name'  => $data['qualification_name'] ?? null,
+            ':institution'         => $data['institution'] ?? null,
+            ':passing_year'        => $data['passing_year'] ?? null,
+            ':certificate_url'     => $data['certificate_url'] ?? null,
             ':verification_status' => $data['verification_status'] ?? 'pending',
         ]);
 
@@ -68,25 +67,15 @@ class DoctorQualification {
     }
 
     public function update(string $id, array $data): bool {
-        // Map legacy field names to canonical schema field names
-        $fieldMap = [
-            'degree' => 'qualification_name',
-            'year' => 'passing_year',
-            'document_path' => 'certificate_url',
-            'title' => 'qualification_name',
-        ];
-        
-        $allowed = ['qualification_name', 'institution', 'specialization', 'passing_year', 
+        $allowed = ['qualification_name', 'institution', 'passing_year', 
                    'certificate_url', 'verification_status'];
         $sets   = [];
         $params = [];
         
         foreach ($data as $key => $value) {
-            // Resolve field name: use mapped name if key is legacy field, else use key if canonical
-            $col = $fieldMap[$key] ?? (in_array($key, $allowed) ? $key : null);
-            if ($col) {
-                $sets[]         = "$col = :$col";
-                $params[":$col"] = $value;
+            if (in_array($key, $allowed)) {
+                $sets[]         = "$key = :$key";
+                $params[":$key"] = $value;
             }
         }
         

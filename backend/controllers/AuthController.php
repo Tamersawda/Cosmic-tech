@@ -95,11 +95,11 @@ class AuthController {
             // ── Issue tokens ──
             [$token, $refreshToken] = $this->issueTokens($userId, $role, $email);
 
-            Response::success(
-                $this->buildAuthPayload($userId, $name, $email, $role, $token, $refreshToken, false, 0),
-                'Registration successful',
-                201
-            );
+        Response::success(
+            $this->buildAuthPayload($userId, $name, $email, $role, $token, $refreshToken, false, false, 1),
+            'Registration successful',
+            201
+        );
 
         } catch (\Exception $e) {
             error_log('Registration error: ' . $e->getMessage());

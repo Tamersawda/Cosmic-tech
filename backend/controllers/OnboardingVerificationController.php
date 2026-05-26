@@ -55,14 +55,8 @@ class OnboardingVerificationController
 
         $input = $this->getJsonInput();
 
-        // Normalize field aliases - support both canonical and legacy names
-        // Canonical: rciCrrNumber, selfDeclarationAccepted
-        // Legacy:    rciNumber,    selfDeclarationAgreed
-        if (!isset($input['rciCrrNumber']) && isset($input['rciNumber'])) {
-            $input['rciCrrNumber'] = $input['rciNumber'];
-        }
-        if (!isset($input['selfDeclarationAccepted']) && isset($input['selfDeclarationAgreed'])) {
-            $input['selfDeclarationAccepted'] = $input['selfDeclarationAgreed'];
+        if (empty($input) && !empty($_POST)) {
+            $input = $_POST;
         }
 
         // Validation based on Blueprint rules
@@ -193,15 +187,13 @@ class OnboardingVerificationController
             return;
         }
 
-        // Return canonical field names (and legacy aliases for backward compatibility)
+        // Return canonical field names
         $rciNum = $profile['rci_crr_number'] ?? null;
         Response::success([
             'registrationType'         => $profile['registration_type'] ?? 'none',
             'rciCrrNumber'             => $rciNum,
-            'rciNumber'                => $rciNum,          // Legacy alias
             'rciCertificateUrl'        => $profile['rci_certificate_url'] ?? null,
             'selfDeclarationAccepted'  => (bool)($profile['self_declaration_accepted'] ?? false),
-            'selfDeclarationAgreed'    => (bool)($profile['self_declaration_accepted'] ?? false),  // Legacy alias
         ]);
     }
 

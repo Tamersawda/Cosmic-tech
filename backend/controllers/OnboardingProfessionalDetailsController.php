@@ -98,7 +98,7 @@ class OnboardingProfessionalDetailsController
                 'primary_title' => $input['primaryTitle'],
                 'secondary_title' => $input['secondaryTitle'] ?? null,
                 'sub_specializations' => json_encode($input['specializations']),
-                'therapy_types' => json_encode($input['therapyApproaches']),
+                'therapy_approaches' => json_encode($input['therapyApproaches']),
                 'languages_spoken' => json_encode($input['languages']),
                 'professional_bio' => $input['bio'] ?? null,
             ];
@@ -222,7 +222,7 @@ class OnboardingProfessionalDetailsController
             'primaryTitle' => $profile['primary_title'],
             'secondaryTitle' => $profile['secondary_title'],
             'specializations' => $profile['sub_specializations'] ? json_decode($profile['sub_specializations'], true) : [],
-            'therapyApproaches' => $profile['therapy_types'] ? json_decode($profile['therapy_types'], true) : [],
+            'therapyApproaches' => $profile['therapy_approaches'] ? json_decode($profile['therapy_approaches'], true) : [],
             'languages' => $profile['languages_spoken'] ? json_decode($profile['languages_spoken'], true) : [],
             'bio' => $profile['professional_bio'],
             'govtIdFront' => $profile['govt_id_front_url'],

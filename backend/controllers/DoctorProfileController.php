@@ -23,8 +23,19 @@ class DoctorProfileController
 
     public function setup($user)
     {
+        die("SETUP FUNCTION REACHED");
         // Use $_POST for multipart/form-data
         $input = $_POST;
+        // DEBUG START
+        echo "<pre>";
+        echo "POST DATA:\n";
+        var_dump($_POST);
+
+        echo "\nFILES DATA:\n";
+        var_dump($_FILES);
+        echo "</pre>";
+        exit;
+        // DEBUG END
 
         // ✅ Normalize input (since multipart/form-data sends everything as string)
         foreach (['videoEnabled', 'audioEnabled'] as $boolField) {
@@ -113,7 +124,6 @@ class DoctorProfileController
             'dateOfBirth'          => ['required', 'string'],
             'phoneNumber'          => ['required', 'string'],
             'primarySpecialty'     => ['required', 'string'],
-            'yearsOfExperience'    => ['required', 'numeric'],
             'licenseNumber'        => ['required', 'string'],
             'languagesSpoken'      => ['required', 'array'],
             'videoEnabled'         => ['required', 'boolean'],
@@ -127,8 +137,8 @@ class DoctorProfileController
             'state'                => ['string'],
             'country'              => ['string'],
             'postalCode'           => ['string'],
-            'subSpecializations'   => ['array'],
-            'therapyTypes'         => ['array']
+            'specializations'      => ['array'],
+            'therapyApproaches'    => ['array']
         ]);
 
         if (!$validation['valid']) {
@@ -144,9 +154,8 @@ class DoctorProfileController
             'phoneNumber'          => $input['phoneNumber'],
             'profilePhotoUrl'      => $profilePhotoUrl, // Fixed mapping for setupProfile
             'primarySpecialty'     => $input['primarySpecialty'],
-            'subSpecializations'   => $input['subSpecializations'] ?? [],
-            'therapyTypes'         => $input['therapyTypes'] ?? [],
-            'yearsOfExperience'    => $input['yearsOfExperience'],
+            'sub_specializations'  => $input['specializations'] ?? [],
+            'therapy_approaches'   => $input['therapyApproaches'] ?? [],
             'licenseNumber'        => $input['licenseNumber'],
             'languagesSpoken'      => $input['languagesSpoken'],
             'videoEnabled'         => $input['videoEnabled'],
@@ -174,9 +183,8 @@ class DoctorProfileController
                 'phone_number'        => $data['phoneNumber'],
                 'profile_photo_url'   => $profilePhotoUrl,
                 'primary_specialty'   => $data['primarySpecialty'],
-                'sub_specializations' => json_encode($data['subSpecializations']),
-                'therapy_types'       => json_encode($data['therapyTypes']),
-                'years_of_experience' => $data['yearsOfExperience'],
+                'sub_specializations' => json_encode($data['sub_specializations']),
+                'therapy_approaches'  => json_encode($data['therapy_approaches']),
                 'license_number'      => $data['licenseNumber'],
                 'languages_spoken'    => json_encode($data['languagesSpoken']),
                 'video_enabled'       => $data['videoEnabled'],
@@ -235,12 +243,11 @@ class DoctorProfileController
 
         // Decode JSON fields
         $profile['languagesSpoken'] = is_string($profile['languages_spoken']) ? json_decode($profile['languages_spoken'], true) : [];
-        $profile['subSpecializations'] = is_string($profile['sub_specializations']) ? json_decode($profile['sub_specializations'], true) : [];
-        $profile['therapyTypes'] = is_string($profile['therapy_types']) ? json_decode($profile['therapy_types'], true) : [];
+        $profile['specializations'] = is_string($profile['sub_specializations']) ? json_decode($profile['sub_specializations'], true) : [];
+        $profile['therapyApproaches'] = is_string($profile['therapy_approaches']) ? json_decode($profile['therapy_approaches'], true) : [];
 
         // Map internal snake_case to camelCase for API
         $profile['primarySpecialty'] = $profile['primary_specialty'];
-        $profile['yearsOfExperience'] = $profile['years_of_experience'];
         $profile['isActive'] = (bool)$profile['is_active'];
 
         unset($profile['languages_spoken'], $profile['sub_specializations'], $profile['profile_photo_url'], $profile['is_active']);
@@ -324,7 +331,6 @@ class DoctorProfileController
 
         // Map internal snake_case to camelCase
         $profile['primarySpecialty'] = $profile['primary_specialty'];
-        $profile['yearsOfExperience'] = $profile['years_of_experience'];
         $profile['isActive'] = (bool)$profile['is_active'];
         $profile['isVerified'] = (bool)$profile['is_verified'];
 

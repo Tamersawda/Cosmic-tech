@@ -19,9 +19,6 @@ class DoctorExperienceController {
     private DoctorExperience $model;
     private Validator         $validator;
 
-    private const EMPLOYMENT_TYPES = [
-        'full_time', 'part_time', 'contract', 'freelance', 'internship', 'other',
-    ];
 
     public function __construct() {
         $this->model     = new DoctorExperience();
@@ -36,44 +33,30 @@ class DoctorExperienceController {
 
         $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 
-        // Normalize boolean
-        if (isset($input['currentlyWorking'])) {
-            $v = $input['currentlyWorking'];
-            $input['currentlyWorking'] = ($v === true || $v === 'true' || $v === '1' || $v === 1);
-        }
-
         $result = $this->validator->validate($input, [
-            'company'        => ['required', 'string'],
-            'roleTitle'      => ['required', 'string'],
+            'organization'   => ['required', 'string'],
+            'role'           => ['required', 'string'],
+            'workType'       => ['required', ['in', 'hospital', 'private_practice', 'ngo', 'online_platform', 'other']],
             'startDate'      => ['required', 'date'],
-            'employmentType' => ['string', ['in', ...self::EMPLOYMENT_TYPES]],
+            'endDate'        => ['nullable', 'date'],
+            'yearsOfExperience' => ['nullable', 'numeric'],
         ]);
         if (!$result['valid']) {
             Response::validation($result['errors']);
             return;
         }
 
-        $currentlyWorking = (bool)($input['currentlyWorking'] ?? false);
-        $endDate = null;
-
-        if (!$currentlyWorking) {
-            if (empty($input['endDate'])) {
-                Response::error('endDate is required when not currently working', 400, 'VALIDATION_ERROR');
-                return;
-            }
-            $endDate = $input['endDate'];
-        }
-
         try {
             $id = $this->model->create([
                 'doctor_id'         => $doctorId,
-                'company'           => trim($input['company']),
-                'role_title'        => trim($input['roleTitle']),
-                'employment_type'   => $input['employmentType'] ?? 'full_time',
-                'currently_working' => $currentlyWorking,
+                'organization'      => trim($input['organization']),
+                'role'              => trim($input['role']),
+                'work_type'         => $input['workType'],
+                'custom_work_type'  => $input['customWorkType'] ?? null,
                 'start_date'        => $input['startDate'],
-                'end_date'          => $endDate,
-                'description'       => trim($input['description'] ?? ''),
+                'end_date'          => $input['endDate'] ?? null,
+                'experience_proof'  => $input['experienceProof'] ?? null,
+                'years_of_experience' => isset($input['yearsOfExperience']) ? (int)$input['yearsOfExperience'] : null,
             ]);
         } catch (\Throwable $e) {
             error_log('Create experience error: ' . $e->getMessage());
@@ -120,21 +103,21 @@ class DoctorExperienceController {
 
         $updateData = [];
         $map = [
-            'company'        => 'company',
-            'roleTitle'      => 'role_title',
-            'employmentType' => 'employment_type',
+            'organization'   => 'organization',
+            'role'           => 'role',
+            'workType'       => 'work_type',
+            'customWorkType' => 'custom_work_type',
             'startDate'      => 'start_date',
             'endDate'        => 'end_date',
-            'description'    => 'description',
+            'experienceProof'=> 'experience_proof',
         ];
         foreach ($map as $api => $db) {
             if (array_key_exists($api, $input)) {
                 $updateData[$db] = is_string($input[$api]) ? trim($input[$api]) : $input[$api];
             }
         }
-        if (array_key_exists('currentlyWorking', $input)) {
-            $v = $input['currentlyWorking'];
-            $updateData['currently_working'] = ($v === true || $v === 'true' || $v === 1) ? 1 : 0;
+        if (array_key_exists('yearsOfExperience', $input)) {
+            $updateData['years_of_experience'] = (int)$input['yearsOfExperience'];
         }
 
         if (empty($updateData)) {
@@ -192,13 +175,14 @@ class DoctorExperienceController {
         return [
             'id'               => $row['id'],
             'doctorId'         => $row['doctor_id'],
-            'company'          => $row['company'],
-            'roleTitle'        => $row['role_title'],
-            'employmentType'   => $row['employment_type'],
-            'currentlyWorking' => (bool)$row['currently_working'],
+            'organization'     => $row['organization'],
+            'role'             => $row['role'],
+            'workType'         => $row['work_type'],
+            'customWorkType'   => $row['custom_work_type'],
             'startDate'        => $row['start_date'],
             'endDate'          => $row['end_date'],
-            'description'      => $row['description'],
+            'yearsOfExperience'=> $row['years_of_experience'],
+            'experienceProof'  => $row['experience_proof'],
             'createdAt'        => $row['created_at'],
             'updatedAt'        => $row['updated_at'],
         ];

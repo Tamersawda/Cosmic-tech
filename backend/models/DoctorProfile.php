@@ -35,8 +35,8 @@ class DoctorProfile {
             if ($result['sub_specializations']) {
                 $result['sub_specializations'] = json_decode($result['sub_specializations'], true);
             }
-            if ($result['therapy_types']) {
-                $result['therapy_types'] = json_decode($result['therapy_types'], true);
+            if ($result['therapy_approaches']) {
+                $result['therapy_approaches'] = json_decode($result['therapy_approaches'], true);
             }
         }
 
@@ -81,7 +81,7 @@ class DoctorProfile {
         $stmt = $this->db->prepare('
             INSERT INTO doctor_profiles (
                 user_id, gender, date_of_birth, phone_number, profile_photo_url,
-                primary_specialty, sub_specializations, therapy_types, years_of_experience,
+                primary_specialty, sub_specializations, therapy_approaches,
                 license_number, medical_council, languages_spoken,
                 video_enabled, video_rate, audio_enabled, audio_rate,
                 consultation_duration, buffer_time, is_active, street_address,
@@ -98,8 +98,7 @@ class DoctorProfile {
                 $data['profile_photo_url'] ?? null,
                 $data['primary_specialty'] ?? null,
                 $data['sub_specializations'] ?? '[]',
-                $data['therapy_types'] ?? '[]',
-                $data['years_of_experience'] ?? 0,
+                $data['therapy_approaches'] ?? '[]',
                 $data['license_number'] ?? null,
                 $data['medical_council'] ?? null,
                 $data['languages_spoken'] ?? '[]',
@@ -132,8 +131,7 @@ class DoctorProfile {
                 profile_photo_url     = ?,
                 primary_specialty     = ?,
                 sub_specializations   = ?,
-                therapy_types         = ?,
-                years_of_experience   = ?,
+                therapy_approaches    = ?,
                 license_number        = ?,
                 languages_spoken      = ?,
                 street_address        = ?,
@@ -159,8 +157,7 @@ class DoctorProfile {
                 $data['profilePhotoUrl']     ?? null,
                 $data['primarySpecialty']    ?? null,
                 json_encode($data['subSpecializations'] ?? []),
-                json_encode($data['therapyTypes'] ?? []),
-                $data['yearsOfExperience']   ?? 0,
+                json_encode($data['therapyApproaches'] ?? []),
                 $data['licenseNumber']       ?? null,
                 json_encode($data['languagesSpoken'] ?? ['English']),
                 $data['streetAddress']       ?? null,
@@ -319,7 +316,6 @@ class DoctorProfile {
                     u.full_name,
                     dp.gender,
                     dp.primary_specialty,
-                    dp.years_of_experience,
                     dp.languages_spoken,
                     dp.video_enabled,
                     dp.video_rate,

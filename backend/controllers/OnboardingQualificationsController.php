@@ -52,12 +52,13 @@ class OnboardingQualificationsController
 
         $input = $this->getJsonInput();
 
-        // Blueprint validation: requires degree (qualification_name), institution, passing_year
-        // Accepts backward compatibility: 'degree' (canonical: 'qualification_name')
+        if (empty($input) && !empty($_POST)) {
+            $input = $_POST;
+        }
+
         $rules = [
-            'degree' => ['required', 'string'],              // Alias for qualification_name
-            'institution' => ['required', 'string'],         // NEW: Blueprint requirement
-            'specialization' => ['nullable', 'string'],
+            'qualificationName' => ['required', 'string'],
+            'institution' => ['required', 'string'],
             'passingYear' => ['required', 'numeric'],
         ];
 
@@ -93,12 +94,10 @@ class OnboardingQualificationsController
                 }
             }
 
-            // Create qualification record
             $qualificationData = [
                 'doctor_id' => $userId,
-                'qualification_name' => $input['degree'],
-                'institution' => $input['institution'],  // NEW: Blueprint requirement
-                'specialization' => $input['specialization'] ?? null,
+                'qualification_name' => $input['qualificationName'],
+                'institution' => $input['institution'],
                 'passing_year' => $year,
                 'certificate_url' => $certificateUrl,
                 'verification_status' => 'pending',
@@ -147,8 +146,7 @@ class OnboardingQualificationsController
             return [
                 'id' => $qual['id'],
                 'qualificationName' => $qual['qualification_name'],
-                'institution' => $qual['institution'],  // NEW: Blueprint field
-                'specialization' => $qual['specialization'],
+                'institution' => $qual['institution'],
                 'passingYear' => $qual['passing_year'],
                 'certificateUrl' => $qual['certificate_url'],
                 'verificationStatus' => $qual['verification_status'] ?? 'pending',
@@ -195,11 +193,11 @@ class OnboardingQualificationsController
         try {
             $updateData = [];
 
-            if (isset($input['degree'])) {
-                $updateData['qualification_name'] = $input['degree'];
+            if (isset($input['qualificationName'])) {
+                $updateData['qualification_name'] = $input['qualificationName'];
             }
-            if (isset($input['specialization'])) {
-                $updateData['specialization'] = $input['specialization'];
+            if (isset($input['institution'])) {
+                $updateData['institution'] = $input['institution'];
             }
             if (isset($input['passingYear'])) {
                 $year = (int)$input['passingYear'];

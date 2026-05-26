@@ -20,7 +20,7 @@ require_once __DIR__ . '/../utils/EmailService.php';
 
 /**
  * OnboardingSubmissionController
- * Handles Final Submission (Step 8)
+ * Handles Final Submission (Step 7)
  * - Validates all onboarding steps are complete
  * - Locks onboarding
  * - Transitions to admin review
@@ -87,7 +87,7 @@ class OnboardingSubmissionController
             $this->onboardingModel->logVerificationAction(
                 $userId,
                 'profile_submitted_for_review',
-                8,
+                7,
                 'in_progress',
                 'submitted'
             );
@@ -142,8 +142,8 @@ class OnboardingSubmissionController
             'onboardingCompleted' => (bool)($onboardingState['onboarding_completed'] ?? false), // legacy alias
             'verificationStatus'  => $profile['verification_status'] ?? 'draft',
             'completedSteps'      => $completedSteps,
-            'totalSteps'          => 8,
-            'progressPercent'     => count($completedSteps) > 0 ? (int)round((count($completedSteps) / 8) * 100) : 0,
+            'totalSteps'          => 7,
+            'progressPercent'     => count($completedSteps) > 0 ? (int)round((count($completedSteps) / 7) * 100) : 0,
             'submittedAt'         => $profile['submitted_at'] ?? null,
             'reviewedAt'          => $profile['reviewed_at'] ?? null,
             'rejectionReason'     => $profile['rejected_reason'] ?? null,
@@ -190,12 +190,10 @@ class OnboardingSubmissionController
             $completed[] = 6;
         }
 
-        // Step 7: Availability (check if at least one slot is set)
-        // We check availability separately if the model is available
-        // Step 8: Payout
+        // Step 7: Payout
         $payoutAccount = $this->payoutModel->getPrimaryByDoctor($userId);
         if ($payoutAccount) {
-            $completed[] = 8;
+            $completed[] = 7;
         }
 
         return $completed;
@@ -244,10 +242,10 @@ class OnboardingSubmissionController
             $errors[] = 'Step 6 (Session Pricing) is incomplete';
         }
 
-        // Step 8: Payout
+        // Step 7: Payout
         $payoutAccount = $this->payoutModel->getPrimaryByDoctor($userId);
         if (!$payoutAccount) {
-            $errors[] = 'Step 8 (Payout Setup) is incomplete';
+            $errors[] = 'Step 7 (Payout Setup) is incomplete';
         }
 
         return $errors;

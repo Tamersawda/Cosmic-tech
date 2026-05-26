@@ -11,14 +11,8 @@
  *   Step 4  -> professional-registration
  *   Step 5  -> work-experience         (CRUD)
  *   Step 6  -> session-fee
- *   Step 7  -> availability
- *   Step 8  -> payout
+ *   Step 7  -> payout
  *   Action  -> submit | status
- *
- * Legacy alias slugs (deprecated, kept for backwards compatibility):
- *   verification -> professional-registration
- *   experiences  -> work-experience
- *   pricing      -> session-fee
  */
 
 namespace Backend\Routes;
@@ -30,7 +24,6 @@ use Backend\Controllers\OnboardingQualificationsController;
 use Backend\Controllers\OnboardingVerificationController;
 use Backend\Controllers\OnboardingExperiencesController;
 use Backend\Controllers\OnboardingPricingController;
-use Backend\Controllers\OnboardingAvailabilityController;
 use Backend\Controllers\OnboardingPayoutController;
 use Backend\Controllers\OnboardingSubmissionController;
 
@@ -41,7 +34,6 @@ require_once __DIR__ . '/../controllers/OnboardingQualificationsController.php';
 require_once __DIR__ . '/../controllers/OnboardingVerificationController.php';
 require_once __DIR__ . '/../controllers/OnboardingExperiencesController.php';
 require_once __DIR__ . '/../controllers/OnboardingPricingController.php';
-require_once __DIR__ . '/../controllers/OnboardingAvailabilityController.php';
 require_once __DIR__ . '/../controllers/OnboardingPayoutController.php';
 require_once __DIR__ . '/../controllers/OnboardingSubmissionController.php';
 
@@ -120,8 +112,7 @@ class OnboardingRoutes
         }
 
         // ── Step 4: Professional Registration (RCI / Self-declaration) ────────
-        // Canonical: professional-registration | Legacy alias: verification
-        if ($step === 'professional-registration' || $step === 'verification') {
+        if ($step === 'professional-registration') {
             $controller = new OnboardingVerificationController();
             if ($this->method === 'POST') {
                 $controller->saveVerification($this->user);
@@ -134,8 +125,7 @@ class OnboardingRoutes
         }
 
         // ── Step 5: Work Experience (CRUD) ────────────────────────────────────
-        // Canonical: work-experience | Legacy alias: experiences
-        if ($step === 'work-experience' || $step === 'experiences') {
+        if ($step === 'work-experience') {
             $controller = new OnboardingExperiencesController();
             $id = $segments[2] ?? null;
             if ($this->method === 'POST') {
@@ -153,8 +143,7 @@ class OnboardingRoutes
         }
 
         // ── Step 6: Session Fee ───────────────────────────────────────────────
-        // Canonical: session-fee | Legacy alias: pricing
-        if ($step === 'session-fee' || $step === 'pricing') {
+        if ($step === 'session-fee') {
             $controller = new OnboardingPricingController();
             if ($this->method === 'POST') {
                 $controller->savePricing($this->user);
@@ -166,25 +155,9 @@ class OnboardingRoutes
             return;
         }
 
-        // ── Step 7: Availability ──────────────────────────────────────────────
-        if ($step === 'availability') {
-            $controller = new OnboardingAvailabilityController();
-            $id = $segments[2] ?? null;
-            if ($this->method === 'POST') {
-                $controller->saveAvailability($this->user);
-            } elseif ($this->method === 'GET' && !$id) {
-                $controller->getAvailability($this->user);
-            } elseif ($this->method === 'PUT' && $id) {
-                $controller->updateSlot($this->user, $id);
-            } elseif ($this->method === 'DELETE' && $id) {
-                $controller->deleteSlot($this->user, $id);
-            } else {
-                $this->methodNotAllowed();
-            }
-            return;
-        }
 
-        // ── Step 8: Payout Setup ──────────────────────────────────────────────
+
+        // ── Step 7: Payout Setup ──────────────────────────────────────────────
         if ($step === 'payout') {
             $controller = new OnboardingPayoutController();
             if ($this->method === 'POST') {
@@ -227,7 +200,7 @@ class OnboardingRoutes
             'validSteps' => [
                 'basic-info', 'professional-details', 'qualifications',
                 'professional-registration', 'work-experience', 'session-fee',
-                'availability', 'payout', 'submit', 'status'
+                'payout', 'submit', 'status'
             ]
         ]);
     }

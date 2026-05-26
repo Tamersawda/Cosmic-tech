@@ -1,2095 +1,2227 @@
 {
-  "info": {
-    "_postman_id": "cosmic-tech-v2",
-    "name": "Cosmic-Tech Therapy API v2 (QA-Ready)",
-    "description": "Complete API for Therapy Booking Platform - Doctor Onboarding, Authentication, Appointments, and Admin Management\n\n**Base URL:** {{baseUrl}}\n**Version:** 2.0.0\n**Updated:** 2026-05-19",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-  },
-  "auth": {
-    "type": "bearer",
-    "bearer": [
-      {
-        "key": "token",
-        "value": "{{token}}",
-        "type": "string"
-      }
+    "info": {
+        "_postman_id": "cosmic-tech-v2",
+        "name": "Cosmic-Tech Therapy API v2 (QA-Ready)",
+        "description": "Complete API for Therapy Booking Platform - Doctor Onboarding, Authentication, Appointments, and Admin Management\n\n**Base URL:** {{baseUrl}}\n**Version:** 2.0.0\n**Updated:** 2026-05-19",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{token}}",
+                "type": "string"
+            }
+        ]
+    },
+    "variable": [
+        {
+          "key": "baseUrl",
+          "value": "http://localhost/Cosmic-tech/backend",
+          "type": "string"
+        },
+        {
+          "key": "token",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "doctorId",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "qualificationId",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "experienceId",
+          "value": "",
+          "type": "string"
+        },
+        {
+          "key": "appointmentId",
+          "value": "",
+          "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "\ud83d\udd10 1. Authentication",
+            "item": [
+                {
+                    "name": "Register Doctor",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const d = pm.response.json();",
+                                    "if (d.success && d.data) {",
+                                    "  pm.collectionVariables.set('token', d.data.token);",
+                                    "  pm.collectionVariables.set('doctorId', d.data.userId || d.data.id);",
+                                    "}",
+                                    "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                                    "pm.test('Has token', () => pm.expect(d.data.token).to.be.a('string'));",
+                                    "pm.test('role=doctor', () => pm.expect(d.data.role).to.eql('doctor'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Dr. Test User\",\n  \"email\": \"doctor{{$timestamp}}@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"role\": \"doctor\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/register",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "register"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Register Client",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const d = pm.response.json();",
+                                    "if (d.success && d.data) {",
+                                    "  pm.collectionVariables.set('clientId', d.data.userId || d.data.id);",
+                                    "}",
+                                    "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                                    "pm.test('role=client', () => pm.expect(d.data.role).to.eql('client'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Client Test User\",\n  \"email\": \"client{{$timestamp}}@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"role\": \"client\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/register",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "register"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Login",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const d = pm.response.json();",
+                                    "if (d.success && d.data) {",
+                                    "  pm.collectionVariables.set('token', d.data.token);",
+                                    "  pm.collectionVariables.set('doctorId', d.data.userId || d.data.id);",
+                                    "}",
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "pm.test('Has token', () => pm.expect(d.data.token).to.be.a('string'));",
+                                    "pm.test('Has role', () => pm.expect(d.data.role).to.be.a('string'));",
+                                    "pm.test('Has Is_profile_complete', () => pm.expect(d.data.Is_profile_complete).to.be.a('boolean'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"doctor@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Current User (me)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const d = pm.response.json();",
+                                    "pm.test('Has userId', () => pm.expect(d.data.userId).to.be.a('string'));",
+                                    "pm.test('Has name', () => pm.expect(d.data.name).to.be.a('string'));",
+                                    "pm.test('Has role', () => pm.expect(d.data.role).to.be.a('string'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "me"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Logout",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/logout",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "logout"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "[NEGATIVE] Register \u2013 missing role",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                                    "const d = pm.response.json();",
+                                    "pm.test('success=false', () => pm.expect(d.success).to.be.false);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"No Role User\",\n  \"email\": \"norole@test.com\",\n  \"password\": \"Pass123!\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/register",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "register"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "[NEGATIVE] Login \u2013 wrong password",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('401 Unauthorized', () => pm.response.to.have.status(401));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"doctor@example.com\",\n  \"password\": \"WrongPassword!\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "auth",
+                                "login"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "\ud83d\udc68\u200d\u2695\ufe0f 2. Doctor Onboarding \u2013 Step 1: Basic Info",
+            "item": [
+                {
+                    "name": "Save Basic Information",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('201 Created or 200 OK', () => {",
+                                    "  pm.expect([200, 201]).to.include(pm.response.code);",
+                                    "});",
+                                    "const d = pm.response.json();",
+                                    "pm.test('success=true', () => pm.expect(d.success).to.be.true);",
+                                    "pm.test('Has data', () => pm.expect(d.data).to.be.an('object'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "multipart/form-data"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "phoneNumber",
+                                    "value": "+1-555-0123",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "gender",
+                                    "value": "male",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "dateOfBirth",
+                                    "value": "1985-06-15",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "profilePhoto",
+                                    "type": "file",
+                                    "src": ""
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/basic-info",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "basic-info"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Basic Information",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const d = pm.response.json();",
+                                    "pm.test('success=true', () => pm.expect(d.success).to.be.true);",
+                                    "pm.test('Has data', () => pm.expect(d.data).to.be.an('object'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/basic-info",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "basic-info"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "\ud83d\udc68\u200d\u2695\ufe0f 3. Doctor Onboarding \u2013 Step 2: Professional Details",
+            "item": [
+                {
+                    "name": "Save Professional Details",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('201 Created or 200 OK', () => {",
+                                    "  pm.expect([200, 201]).to.include(pm.response.code);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "multipart/form-data"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "primaryTitle",
+                                    "value": "Clinical Psychologist",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "secondaryTitle",
+                                    "value": "",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "specializations",
+                                    "value": "Anxiety Disorders, Depression, PTSD",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "languagesSpoken",
+                                    "value": "English, Hindi, Spanish",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "professionalBio",
+                                    "value": "8+ years of clinical experience specializing in cognitive behavioral therapy",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "therapyApproaches",
+                                    "value": "individual, couples, family",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "govtIdFront",
+                                    "type": "file",
+                                    "src": ""
+                                },
+                                {
+                                    "key": "govtIdBack",
+                                    "type": "file",
+                                    "src": ""
+                                }
+                            ]
+                        }
+                    },
+                    "url": {
+                        "raw": "{{baseUrl}}/api/doctors/onboarding/professional-details",
+                        "host": [
+                            "{{baseUrl}}"
+                        ],
+                        "path": [
+                            "api",
+                            "doctors",
+                            "onboarding",
+                            "professional-details"
+                        ]
+                    }
+                },
+                {
+                    "name": "Get Professional Details",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/professional-details",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "professional-details"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "\ud83d\udc68\u200d\u2695\ufe0f 4. Doctor Onboarding \u2013 Step 3: Qualifications",
+            "item": [
+                {
+                    "name": "Add Qualification",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const d = pm.response.json();",
+                                    "if (d.success && d.data) {",
+                                    "  pm.collectionVariables.set('qualificationId', d.data.id);",
+                                    "}",
+                                    "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                                    "pm.test('success=true', () => pm.expect(d.success).to.be.true);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "multipart/form-data"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "qualificationName",
+                                    "value": "PhD in Clinical Psychology",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "institution",
+                                    "value": "Stanford University",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "passingYear",
+                                    "value": "2015",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "certificateUrl",
+                                    "type": "file",
+                                    "src": ""
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/qualifications",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "qualifications"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List Qualifications",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const d = pm.response.json();",
+                                    "pm.test('data is array', () => pm.expect(d.data).to.be.an('array'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/qualifications",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "qualifications"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Qualification",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"qualificationName\": \"Doctor of Philosophy (PhD) in Clinical Psychology\",\n  \"passingYear\": 2015\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/qualifications/{{qualificationId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "qualifications",
+                                "{{qualificationId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Qualification",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('200 OK or 204 No Content', () => {",
+                                    "  pm.expect([200, 204]).to.include(pm.response.code);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/qualifications/{{qualificationId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "qualifications",
+                                "{{qualificationId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "[NEGATIVE] Upload invalid file type",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('400 rejected', () => pm.response.to.have.status(400));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "multipart/form-data"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "qualificationName",
+                                    "value": "Test Degree",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "passingYear",
+                                    "value": "2015",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "document",
+                                    "type": "file",
+                                    "src": ""
+                                },
+                                {
+                                    "key": "institution",
+                                    "value": "Oxford University",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/qualifications",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "qualifications"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "\ud83d\udc68\u200d\u2695\ufe0f 5. Doctor Onboarding \u2013 Step 4: Professional Registration",
+            "item": [
+                {
+                    "name": "Save Professional Registration (RCI/Verification)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('201 Created or 200 OK', () => {",
+                                    "  pm.expect([200, 201]).to.include(pm.response.code);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "multipart/form-data"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "registrationType",
+                                    "value": "rci",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "rciCrrNumber",
+                                    "value": "RCI-12345",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "selfDeclarationAccepted",
+                                    "value": "true",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "rciCertificate",
+                                    "type": "file",
+                                    "src": ""
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/professional-registration",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "professional-registration"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Professional Registration",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/professional-registration",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "professional-registration"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "\ud83d\udc68\u200d\u2695\ufe0f 6. Doctor Onboarding \u2013 Step 5: Work Experience",
+            "item": [
+                {
+                    "name": "Add Experience",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const d = pm.response.json();",
+                                    "if (d.success && d.data) {",
+                                    "  pm.collectionVariables.set('experienceId', d.data.id);",
+                                    "}",
+                                    "pm.test('201 Created', () => pm.response.to.have.status(201));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"organization\": \"City Mental Health Clinic\",\n  \"role\": \"Senior Clinical Psychologist\",\n  \"workType\": \"clinic\",\n  \"startDate\": \"2018-01-15\",\n  \"endDate\": null\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/work-experience",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "work-experience"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List Experiences",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/work-experience",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "work-experience"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Experience",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"organization\": \"Advanced Mental Health Center\",\n  \"role\": \"Lead Psychologist\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/work-experience/{{experienceId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "work-experience",
+                                "{{experienceId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Experience",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/work-experience/{{experienceId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "work-experience",
+                                "{{experienceId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "[NEGATIVE] Create \u2013 missing endDate for past employment",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"organization\": \"Bad Hospital\",\n  \"role\": \"Doctor\",\n  \"workType\": \"hospital\",\n  \"startDate\": \"2020-01-01\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/work-experience",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "work-experience"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "\ud83d\udc68\u200d\u2695\ufe0f 7. Doctor Onboarding \u2013 Step 6: Session Fee (Pricing)",
+            "item": [
+                {
+                    "name": "Save Session Fee",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('201 Created or 200 OK', () => {",
+                                    "  pm.expect([200, 201]).to.include(pm.response.code);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"sessionFeeTier\": \"999\",\n  \"pricingJustification\": \"Based on my experience level and market research in my area\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/session-fee",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "session-fee"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Session Fee",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/session-fee",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "session-fee"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "\ud83d\udc68\u200d\u2695\ufe0f 9. Doctor Onboarding \u2013 Step 8: Payout",
+            "item": [
+                {
+                    "name": "Save Payout Information",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('201 Created or 200 OK', () => {",
+                                    "  pm.expect([200, 201]).to.include(pm.response.code);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"accountHolderName\": \"Dr. Jane Smith\",\n  \"accountNumber\": \"1234567890\",\n  \"ifscCode\": \"HDFC0001234\",\n  \"bankName\": \"HDFC Bank\",\n  \"branchName\": \"New York Branch\",\n  \"panNumber\": \"ABCDE1234F\",\n  \"isGstRegistered\": false,\n  \"gstNumber\": null,\n  \"termsConsent\": true\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/payout",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "payout"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Payout Information",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/payout",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "payout"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "\u2705 10. Doctor Onboarding \u2013 Submission & Status",
+            "item": [
+                {
+                    "name": "Get Onboarding Status",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const d = pm.response.json();",
+                                    "pm.test('Has completion status', () => pm.expect(d.data).to.have.property('completed_steps'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/status",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "status"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Submit Onboarding",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('200 OK or 201 Created', () => {",
+                                    "  pm.expect([200, 201]).to.include(pm.response.code);",
+                                    "});",
+                                    "const d = pm.response.json();",
+                                    "pm.test('success=true', () => pm.expect(d.success).to.be.true);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/submit",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "submit"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "\ud83d\udee1\ufe0f 11. Admin Management",
+            "item": [
+                {
+                    "name": "List All Doctors",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const d = pm.response.json();",
+                                    "pm.test('Has doctors array', () => pm.expect(d.data.doctors || d.data).to.be.an('array'));",
+                                    "if (d.data.doctors && d.data.doctors[0]) {",
+                                    "  pm.test('Doctor has isProfileApproved', () => pm.expect(d.data.doctors[0]).to.have.property('isProfileApproved'));",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/admin/doctors",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "admin",
+                                "doctors"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Verify Doctor",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"status\": \"approved\",\n  \"notes\": \"Profile verified successfully\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/admin/doctors/{{doctorId}}/verify",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "admin",
+                                "doctors",
+                                "{{doctorId}}",
+                                "verify"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Admin Dashboard",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/admin/dashboard",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "admin",
+                                "dashboard"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "[DEPRECATED] Verify Doctor (old endpoint)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Old endpoint - may be deprecated', () => {",
+                                    "  pm.expect([200, 404]).to.include(pm.response.code);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"doctorId\": \"{{doctorId}}\",\n  \"status\": \"approved\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/admin/verify-doctor",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "admin",
+                                "verify-doctor"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "[NEGATIVE] List doctors \u2013 non-admin token",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/admin/doctors",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "admin",
+                                "doctors"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "\ud83d\udcc5 12. Appointments",
+            "item": [
+                {
+                    "name": "Book Appointment",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const d = pm.response.json();",
+                                    "if (d.success && d.data) {",
+                                    "  pm.collectionVariables.set('appointmentId', d.data.id);",
+                                    "}",
+                                    "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                                    "pm.test('Has appointment ID', () => pm.expect(d.data.id).to.exist);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"doctorId\": \"{{doctorId}}\",\n  \"scheduledDate\": \"2026-06-15\",\n  \"scheduledTime\": \"10:00\",\n  \"consultationType\": \"video\",\n  \"reason\": \"Anxiety consultation\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/appointments",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "appointments"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List My Appointments",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                                    "const d = pm.response.json();",
+                                    "pm.test('data is array', () => pm.expect(d.data).to.be.an('array'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/appointments",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "appointments"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Appointment Details",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "appointments",
+                                "{{appointmentId}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Cancel Appointment",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reason\": \"Schedule conflict\",\n  \"cancellationReason\": \"Personal emergency\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}/cancel",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "appointments",
+                                "{{appointmentId}}",
+                                "cancel"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Available Slots",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/appointments/available-slots?doctorId={{doctorId}}&date=2026-06-15",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "appointments",
+                                "available-slots"
+                            ],
+                            "query": [
+                                {
+                                    "key": "doctorId",
+                                    "value": "{{doctorId}}"
+                                },
+                                {
+                                    "key": "date",
+                                    "value": "2026-06-15"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "\ud83d\udd27 13. DEPRECATED ENDPOINTS",
+            "item": [
+                {
+                    "name": "[DEPRECATED] Setup Doctor Profile (Old)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Old endpoint - use Step 1-8 instead', () => {",
+                                    "  pm.expect([200, 201, 404]).to.include(pm.response.code);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "multipart/form-data"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "gender",
+                                    "value": "male",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "dateOfBirth",
+                                    "value": "1985-06-15",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "phoneNumber",
+                                    "value": "+1234567890",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "profilePhoto",
+                                    "type": "file",
+                                    "src": ""
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/setup",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "setup"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "[DEPRECATED] Setup Client Profile (Old)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"step\": 1,\n  \"gender\": \"female\",\n  \"dateOfBirth\": \"1995-05-15\",\n  \"phoneNumber\": \"+1987654321\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/clients/setup",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "clients",
+                                "setup"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "[NEGATIVE] Add Qualification \u2013 missing institution",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                                    "const d = pm.response.json();",
+                                    "pm.test('Error mentions institution', () => pm.expect(d.error || d.message).to.include('institution' || 'Institution'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "multipart/form-data"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "qualificationName",
+                                    "value": "Bachelor's Degree",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "passingYear",
+                                    "value": "2015",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "institution",
+                                    "value": "Oxford University",
+                                    "type": "text"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/qualifications",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "qualifications"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "[NEGATIVE] Save Pricing \u2013 invalid session fee tier",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                                    "const d = pm.response.json();",
+                                    "pm.test('Error mentions invalid tier', () => pm.expect(d.error || d.message || d.data).to.include('tier' || 'Invalid'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"sessionFeeTier\": \"500\",\n  \"pricingJustification\": \"This tier value is invalid\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/session-fee",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "session-fee"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "[NEGATIVE] Save Pricing \u2013 justification too short",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                                    "const d = pm.response.json();",
+                                    "pm.test('Error about justification', () => pm.expect(d.error || d.message || d.data).to.include('justification' || 'characters' || '10'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"sessionFeeTier\": \"999\",\n  \"pricingJustification\": \"Too short\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/session-fee",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "session-fee"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "[NEGATIVE] Save Payout \u2013 missing termsConsent",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                                    "const d = pm.response.json();",
+                                    "pm.test('Error mentions terms or consent', () => pm.expect(d.error || d.message).to.include('terms' || 'consent'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"accountHolderName\": \"Dr. Test\",\n  \"accountNumber\": \"1234567890\",\n  \"ifscCode\": \"HDFC0001234\",\n  \"bankName\": \"HDFC Bank\",\n  \"branchName\": \"Branch\",\n  \"panNumber\": \"ABCDE1234F\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/payout",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "payout"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "[NEGATIVE] Save Payout \u2013 termsConsent=false",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"accountHolderName\": \"Dr. Test\",\n  \"accountNumber\": \"1234567890\",\n  \"ifscCode\": \"HDFC0001234\",\n  \"bankName\": \"HDFC\",\n  \"branchName\": \"Branch\",\n  \"panNumber\": \"ABCDE1234F\",\n  \"termsConsent\": false\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/payout",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "payout"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "[NEGATIVE] Add Experience \u2013 missing endDate for past work",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"organization\": \"Past Clinic\",\n  \"role\": \"Consultant\",\n  \"workType\": \"clinic\",\n  \"startDate\": \"2018-01-01\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/work-experience",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "work-experience"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "[NEGATIVE] Add Experience \u2013 workType='other' without customWorkType",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                                    "const d = pm.response.json();",
+                                    "pm.test('Error mentions custom work type', () => pm.expect(d.error || d.message).to.include('custom' || 'workType'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"organization\": \"Unknown Org\",\n  \"role\": \"Consultant\",\n  \"workType\": \"other\",\n  \"startDate\": \"2024-01-01\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/work-experience",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "work-experience"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "[NEGATIVE] API call \u2013 Missing Authorization header",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('401 Unauthorized', () => pm.response.to.have.status(401));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/basic-info",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "basic-info"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "[NEGATIVE] API call \u2013 Invalid JWT token",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('401 Unauthorized', () => pm.response.to.have.status(401));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer INVALID_TOKEN_12345"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/basic-info",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "basic-info"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "[NEGATIVE] API call \u2013 Non-existent resource",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('404 Not Found', () => pm.response.to.have.status(404));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/doctors/onboarding/qualifications/non-existent-id",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctors",
+                                "onboarding",
+                                "qualifications",
+                                "non-existent-id"
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
     ]
-  },
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost/Cosmic-tech/backend",
-      "type": "string"
-    },
-    {
-      "key": "token",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "adminToken",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "doctorId",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "appointmentId",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "qualificationId",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "experienceId",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "availabilityId",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "clientId",
-      "value": "",
-      "type": "string"
-    }
-  ],
-  "item": [
-    {
-      "name": "🔐 1. Authentication",
-      "item": [
-        {
-          "name": "Register Doctor",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const d = pm.response.json();",
-                  "if (d.success && d.data) {",
-                  "  pm.collectionVariables.set('token', d.data.token);",
-                  "  pm.collectionVariables.set('doctorId', d.data.userId || d.data.id);",
-                  "}",
-                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
-                  "pm.test('Has token', () => pm.expect(d.data.token).to.be.a('string'));",
-                  "pm.test('role=doctor', () => pm.expect(d.data.role).to.eql('doctor'));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Dr. Test User\",\n  \"email\": \"doctor{{$timestamp}}@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"role\": \"doctor\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/register",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "register"]
-            }
-          }
-        },
-        {
-          "name": "Register Client",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const d = pm.response.json();",
-                  "if (d.success && d.data) {",
-                  "  pm.collectionVariables.set('clientId', d.data.userId || d.data.id);",
-                  "}",
-                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
-                  "pm.test('role=client', () => pm.expect(d.data.role).to.eql('client'));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Client Test User\",\n  \"email\": \"client{{$timestamp}}@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"role\": \"client\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/register",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "register"]
-            }
-          }
-        },
-        {
-          "name": "Login",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const d = pm.response.json();",
-                  "if (d.success && d.data) {",
-                  "  pm.collectionVariables.set('token', d.data.token);",
-                  "  pm.collectionVariables.set('doctorId', d.data.userId || d.data.id);",
-                  "}",
-                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
-                  "pm.test('Has token', () => pm.expect(d.data.token).to.be.a('string'));",
-                  "pm.test('Has role', () => pm.expect(d.data.role).to.be.a('string'));",
-                  "pm.test('Has Is_profile_complete', () => pm.expect(d.data.Is_profile_complete).to.be.a('boolean'));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"doctor@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "login"]
-            }
-          }
-        },
-        {
-          "name": "Get Current User (me)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
-                  "const d = pm.response.json();",
-                  "pm.test('Has userId', () => pm.expect(d.data.userId).to.be.a('string'));",
-                  "pm.test('Has name', () => pm.expect(d.data.name).to.be.a('string'));",
-                  "pm.test('Has role', () => pm.expect(d.data.role).to.be.a('string'));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/me",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "me"]
-            }
-          }
-        },
-        {
-          "name": "Logout",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/logout",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "logout"]
-            }
-          }
-        },
-        {
-          "name": "[NEGATIVE] Register – missing role",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
-                  "const d = pm.response.json();",
-                  "pm.test('success=false', () => pm.expect(d.success).to.be.false);"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"No Role User\",\n  \"email\": \"norole@test.com\",\n  \"password\": \"Pass123!\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/register",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "register"]
-            }
-          }
-        },
-        {
-          "name": "[NEGATIVE] Login – wrong password",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('401 Unauthorized', () => pm.response.to.have.status(401));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"doctor@example.com\",\n  \"password\": \"WrongPassword!\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "login"]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "👨‍⚕️ 2. Doctor Onboarding – Step 1: Basic Info",
-      "item": [
-        {
-          "name": "Save Basic Information",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('201 Created or 200 OK', () => {",
-                  "  pm.expect([200, 201]).to.include(pm.response.code);",
-                  "});",
-                  "const d = pm.response.json();",
-                  "pm.test('success=true', () => pm.expect(d.success).to.be.true);",
-                  "pm.test('Has data', () => pm.expect(d.data).to.be.an('object'));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "multipart/form-data"
-              }
-            ],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "phoneNumber",
-                  "value": "+1-555-0123",
-                  "type": "text"
-                },
-                {
-                  "key": "gender",
-                  "value": "male",
-                  "type": "text"
-                },
-                {
-                  "key": "dateOfBirth",
-                  "value": "1985-06-15",
-                  "type": "text"
-                },
-                {
-                  "key": "profilePhoto",
-                  "type": "file",
-                  "src": ""
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/basic-info",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "basic-info"]
-            }
-          }
-        },
-        {
-          "name": "Get Basic Information",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
-                  "const d = pm.response.json();",
-                  "pm.test('success=true', () => pm.expect(d.success).to.be.true);",
-                  "pm.test('Has data', () => pm.expect(d.data).to.be.an('object'));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/basic-info",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "basic-info"]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "👨‍⚕️ 3. Doctor Onboarding – Step 2: Professional Details",
-      "item": [
-        {
-          "name": "Save Professional Details",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('201 Created or 200 OK', () => {",
-                  "  pm.expect([200, 201]).to.include(pm.response.code);",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"primaryTitle\": \"Clinical Psychologist\",\n  \"specializations\": [\"Anxiety Disorders\", \"Depression\", \"PTSD\"],\n  \"languagesSpoken\": [\"English\", \"Hindi\", \"Spanish\"],\n  \"professionalBio\": \"8+ years of clinical experience specializing in cognitive behavioral therapy\",\n  \"yearsOfExperience\": 8,\n  \"therapyTypes\": [\"individual\", \"couples\", \"family\"]\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/professional-details",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "professional-details"]
-            }
-          }
-        },
-        {
-          "name": "Get Professional Details",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/professional-details",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "professional-details"]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "👨‍⚕️ 4. Doctor Onboarding – Step 3: Qualifications",
-      "item": [
-        {
-          "name": "Add Qualification",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const d = pm.response.json();",
-                  "if (d.success && d.data) {",
-                  "  pm.collectionVariables.set('qualificationId', d.data.id);",
-                  "}",
-                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
-                  "pm.test('success=true', () => pm.expect(d.success).to.be.true);"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "multipart/form-data"
-              }
-            ],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "degree",
-                  "value": "PhD in Clinical Psychology",
-                  "type": "text"
-                },
-                {
-                  "key": "institution",
-                  "value": "Stanford University",
-                  "type": "text"
-                },
-                {
-                  "key": "specialization",
-                  "value": "Clinical & Cognitive Behavioral Therapy",
-                  "type": "text"
-                },
-                {
-                  "key": "passingYear",
-                  "value": "2015",
-                  "type": "text"
-                },
-                {
-                  "key": "certificate",
-                  "type": "file",
-                  "src": ""
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/qualifications",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "qualifications"]
-            }
-          }
-        },
-        {
-          "name": "List Qualifications",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
-                  "const d = pm.response.json();",
-                  "pm.test('data is array', () => pm.expect(d.data).to.be.an('array'));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/qualifications",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "qualifications"]
-            }
-          }
-        },
-        {
-          "name": "Update Qualification",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"degree\": \"Doctor of Philosophy (PhD) in Clinical Psychology\",\n  \"specialization\": \"Clinical & Cognitive Behavioral Therapy\",\n  \"passingYear\": 2015\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/qualifications/{{qualificationId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "qualifications", "{{qualificationId}}"]
-            }
-          }
-        },
-        {
-          "name": "Delete Qualification",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('200 OK or 204 No Content', () => {",
-                  "  pm.expect([200, 204]).to.include(pm.response.code);",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/qualifications/{{qualificationId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "qualifications", "{{qualificationId}}"]
-            }
-          }
-        },
-        {
-          "name": "[NEGATIVE] Upload invalid file type",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('400 rejected', () => pm.response.to.have.status(400));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "multipart/form-data"
-              }
-            ],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "degree",
-                  "value": "Test Degree",
-                  "type": "text"
-                },
-                {
-                  "key": "passingYear",
-                  "value": "2015",
-                  "type": "text"
-                },
-                {
-                  "key": "document",
-                  "type": "file",
-                  "src": ""
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/qualifications",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "qualifications"]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "👨‍⚕️ 5. Doctor Onboarding – Step 4: Professional Registration",
-      "item": [
-        {
-          "name": "Save Professional Registration (RCI/Verification)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('201 Created or 200 OK', () => {",
-                  "  pm.expect([200, 201]).to.include(pm.response.code);",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"registrationType\": \"rci\",\n  \"rciCrrNumber\": \"RCI-12345\",\n  \"selfDeclarationAccepted\": true\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/professional-registration",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "professional-registration"]
-            }
-          }
-        },
-        {
-          "name": "Get Professional Registration",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/professional-registration",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "professional-registration"]
-            }
-          }
-        },
-        {
-          "name": "[ALIAS] Save via verification endpoint",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"registrationType\": \"rci\",\n  \"rciCrrNumber\": \"RCI-12345\",\n  \"selfDeclarationAccepted\": true\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/verification",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "verification"]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "👨‍⚕️ 6. Doctor Onboarding – Step 5: Work Experience",
-      "item": [
-        {
-          "name": "Add Experience",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const d = pm.response.json();",
-                  "if (d.success && d.data) {",
-                  "  pm.collectionVariables.set('experienceId', d.data.id);",
-                  "}",
-                  "pm.test('201 Created', () => pm.response.to.have.status(201));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"organization\": \"City Mental Health Clinic\",\n  \"role\": \"Senior Clinical Psychologist\",\n  \"workType\": \"clinic\",\n  \"currentlyWorking\": true,\n  \"startDate\": \"2018-01-15\",\n  \"endDate\": null,\n  \"description\": \"Led adult therapy services, managed 30+ clients\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/work-experience",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "work-experience"]
-            }
-          }
-        },
-        {
-          "name": "List Experiences",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/work-experience",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "work-experience"]
-            }
-          }
-        },
-        {
-          "name": "Update Experience",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"organization\": \"Advanced Mental Health Center\",\n  \"role\": \"Lead Psychologist\",\n  \"currentlyWorking\": true,\n  \"description\": \"Led adult therapy services, managed 40+ clients, supervision role\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/work-experience/{{experienceId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "work-experience", "{{experienceId}}"]
-            }
-          }
-        },
-        {
-          "name": "Delete Experience",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/work-experience/{{experienceId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "work-experience", "{{experienceId}}"]
-            }
-          }
-        },
-        {
-          "name": "[ALIAS] Add via experiences endpoint",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"organization\": \"Private Practice\",\n  \"role\": \"Clinical Psychologist\",\n  \"workType\": \"private_practice\",\n  \"currentlyWorking\": true,\n  \"startDate\": \"2020-06-01\",\n  \"endDate\": null,\n  \"description\": \"Individual therapy practice\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/experiences",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "experiences"]
-            }
-          }
-        },
-        {
-          "name": "[NEGATIVE] Create – missing endDate for past employment",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"organization\": \"Bad Hospital\",\n  \"role\": \"Doctor\",\n  \"workType\": \"hospital\",\n  \"currentlyWorking\": false,\n  \"startDate\": \"2020-01-01\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/work-experience",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "work-experience"]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "👨‍⚕️ 7. Doctor Onboarding – Step 6: Session Fee (Pricing)",
-      "item": [
-        {
-          "name": "Save Session Fee",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('201 Created or 200 OK', () => {",
-                  "  pm.expect([200, 201]).to.include(pm.response.code);",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"sessionFeeTier\": \"999\",\n  \"pricingJustification\": \"Based on my experience level and market research in my area\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/session-fee",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "session-fee"]
-            }
-          }
-        },
-        {
-          "name": "Get Session Fee",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/session-fee",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "session-fee"]
-            }
-          }
-        },
-        {
-          "name": "[ALIAS] Save via pricing endpoint",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"sessionFeeTier\": \"1499\",\n  \"pricingJustification\": \"Premium tier based on advanced training and client feedback\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/pricing",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "pricing"]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "👨‍⚕️ 8. Doctor Onboarding – Step 7: Availability",
-      "item": [
-        {
-          "name": "Set Availability",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const d = pm.response.json();",
-                  "if (d.success && d.data) {",
-                  "  pm.collectionVariables.set('availabilityId', d.data.id || d.data[0]?.id);",
-                  "}",
-                  "pm.test('201 Created or 200 OK', () => {",
-                  "  pm.expect([200, 201]).to.include(pm.response.code);",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"weeklySchedule\": [\n    {\n      \"dayOfWeek\": 1,\n      \"startTime\": \"09:00\",\n      \"endTime\": \"17:00\",\n      \"isAvailable\": true\n    },\n    {\n      \"dayOfWeek\": 2,\n      \"startTime\": \"09:00\",\n      \"endTime\": \"17:00\",\n      \"isAvailable\": true\n    },\n    {\n      \"dayOfWeek\": 3,\n      \"startTime\": \"09:00\",\n      \"endTime\": \"17:00\",\n      \"isAvailable\": true\n    },\n    {\n      \"dayOfWeek\": 4,\n      \"startTime\": \"10:00\",\n      \"endTime\": \"18:00\",\n      \"isAvailable\": true\n    },\n    {\n      \"dayOfWeek\": 5,\n      \"startTime\": \"09:00\",\n      \"endTime\": \"15:00\",\n      \"isAvailable\": true\n    }\n  ]\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/availability",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "availability"]
-            }
-          }
-        },
-        {
-          "name": "Get Availability",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/availability",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "availability"]
-            }
-          }
-        },
-        {
-          "name": "Update Slot",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"dayOfWeek\": 1,\n  \"startTime\": \"08:00\",\n  \"endTime\": \"18:00\",\n  \"isAvailable\": true\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/availability/{{availabilityId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "availability", "{{availabilityId}}"]
-            }
-          }
-        },
-        {
-          "name": "Delete Slot",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/availability/{{availabilityId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "availability", "{{availabilityId}}"]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "👨‍⚕️ 9. Doctor Onboarding – Step 8: Payout",
-      "item": [
-        {
-          "name": "Save Payout Information",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('201 Created or 200 OK', () => {",
-                  "  pm.expect([200, 201]).to.include(pm.response.code);",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"accountHolderName\": \"Dr. Jane Smith\",\n  \"accountNumber\": \"1234567890\",\n  \"ifscCode\": \"HDFC0001234\",\n  \"bankName\": \"HDFC Bank\",\n  \"branchName\": \"New York Branch\",\n  \"panNumber\": \"ABCDE1234F\",\n  \"isGstRegistered\": false,\n  \"gstNumber\": null,\n  \"termsConsent\": true\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/payout",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "payout"]
-            }
-          }
-        },
-        {
-          "name": "Get Payout Information",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/payout",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "payout"]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "✅ 10. Doctor Onboarding – Submission & Status",
-      "item": [
-        {
-          "name": "Get Onboarding Status",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
-                  "const d = pm.response.json();",
-                  "pm.test('Has completion status', () => pm.expect(d.data).to.have.property('completed_steps'));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/status",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "status"]
-            }
-          }
-        },
-        {
-          "name": "Submit Onboarding",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('200 OK or 201 Created', () => {",
-                  "  pm.expect([200, 201]).to.include(pm.response.code);",
-                  "});",
-                  "const d = pm.response.json();",
-                  "pm.test('success=true', () => pm.expect(d.success).to.be.true);"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/submit",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "submit"]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "🛡️ 11. Admin Management",
-      "item": [
-        {
-          "name": "List All Doctors",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
-                  "const d = pm.response.json();",
-                  "pm.test('Has doctors array', () => pm.expect(d.data.doctors || d.data).to.be.an('array'));",
-                  "if (d.data.doctors && d.data.doctors[0]) {",
-                  "  pm.test('Doctor has isProfileApproved', () => pm.expect(d.data.doctors[0]).to.have.property('isProfileApproved'));",
-                  "}"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/admin/doctors",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "admin", "doctors"]
-            }
-          }
-        },
-        {
-          "name": "Verify Doctor",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminToken}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"status\": \"approved\",\n  \"notes\": \"Profile verified successfully\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/admin/doctors/{{doctorId}}/verify",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "admin", "doctors", "{{doctorId}}", "verify"]
-            }
-          }
-        },
-        {
-          "name": "Get Admin Dashboard",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/admin/dashboard",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "admin", "dashboard"]
-            }
-          }
-        },
-        {
-          "name": "[DEPRECATED] Verify Doctor (old endpoint)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Old endpoint - may be deprecated', () => {",
-                  "  pm.expect([200, 404]).to.include(pm.response.code);",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminToken}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"doctorId\": \"{{doctorId}}\",\n  \"status\": \"approved\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/admin/verify-doctor",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "admin", "verify-doctor"]
-            }
-          }
-        },
-        {
-          "name": "[NEGATIVE] List doctors – non-admin token",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('403 Forbidden', () => pm.response.to.have.status(403));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/admin/doctors",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "admin", "doctors"]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "📅 12. Appointments",
-      "item": [
-        {
-          "name": "Book Appointment",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "const d = pm.response.json();",
-                  "if (d.success && d.data) {",
-                  "  pm.collectionVariables.set('appointmentId', d.data.id);",
-                  "}",
-                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
-                  "pm.test('Has appointment ID', () => pm.expect(d.data.id).to.exist);"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"doctorId\": \"{{doctorId}}\",\n  \"scheduledDate\": \"2026-06-15\",\n  \"scheduledTime\": \"10:00\",\n  \"consultationType\": \"video\",\n  \"reason\": \"Anxiety consultation\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/appointments",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "appointments"]
-            }
-          }
-        },
-        {
-          "name": "List My Appointments",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
-                  "const d = pm.response.json();",
-                  "pm.test('data is array', () => pm.expect(d.data).to.be.an('array'));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/appointments",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "appointments"]
-            }
-          }
-        },
-        {
-          "name": "Get Appointment Details",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "appointments", "{{appointmentId}}"]
-            }
-          }
-        },
-        {
-          "name": "Cancel Appointment",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"reason\": \"Schedule conflict\",\n  \"cancellationReason\": \"Personal emergency\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}/cancel",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "appointments", "{{appointmentId}}", "cancel"]
-            }
-          }
-        },
-        {
-          "name": "Get Available Slots",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/appointments/available-slots?doctorId={{doctorId}}&date=2026-06-15",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "appointments", "available-slots"],
-              "query": [
-                {
-                  "key": "doctorId",
-                  "value": "{{doctorId}}"
-                },
-                {
-                  "key": "date",
-                  "value": "2026-06-15"
-                }
-              ]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "🔧 13. DEPRECATED ENDPOINTS",
-      "item": [
-        {
-          "name": "[DEPRECATED] Setup Doctor Profile (Old)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Old endpoint - use Step 1-8 instead', () => {",
-                  "  pm.expect([200, 201, 404]).to.include(pm.response.code);",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "multipart/form-data"
-              }
-            ],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "gender",
-                  "value": "male",
-                  "type": "text"
-                },
-                {
-                  "key": "dateOfBirth",
-                  "value": "1985-06-15",
-                  "type": "text"
-                },
-                {
-                  "key": "phoneNumber",
-                  "value": "+1234567890",
-                  "type": "text"
-                },
-                {
-                  "key": "profilePhoto",
-                  "type": "file",
-                  "src": ""
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/setup",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "setup"]
-            }
-          }
-        },
-        {
-          "name": "[DEPRECATED] Setup Client Profile (Old)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"step\": 1,\n  \"gender\": \"female\",\n  \"dateOfBirth\": \"1995-05-15\",\n  \"phoneNumber\": \"+1987654321\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/clients/setup",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "clients", "setup"]
-            }
-          }
-        },
-        {
-          "name": "[NEGATIVE] Add Qualification – missing institution",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
-                  "const d = pm.response.json();",
-                  "pm.test('Error mentions institution', () => pm.expect(d.error || d.message).to.include('institution' || 'Institution'));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "multipart/form-data"
-              }
-            ],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "degree",
-                  "value": "Bachelor's Degree",
-                  "type": "text"
-                },
-                {
-                  "key": "passingYear",
-                  "value": "2015",
-                  "type": "text"
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/qualifications",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "qualifications"]
-            }
-          }
-        },
-        {
-          "name": "[NEGATIVE] Save Pricing – invalid session fee tier",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
-                  "const d = pm.response.json();",
-                  "pm.test('Error mentions invalid tier', () => pm.expect(d.error || d.message || d.data).to.include('tier' || 'Invalid'));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"sessionFeeTier\": \"500\",\n  \"pricingJustification\": \"This tier value is invalid\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/session-fee",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "session-fee"]
-            }
-          }
-        },
-        {
-          "name": "[NEGATIVE] Save Pricing – justification too short",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
-                  "const d = pm.response.json();",
-                  "pm.test('Error about justification', () => pm.expect(d.error || d.message || d.data).to.include('justification' || 'characters' || '10'));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"sessionFeeTier\": \"999\",\n  \"pricingJustification\": \"Too short\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/session-fee",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "session-fee"]
-            }
-          }
-        },
-        {
-          "name": "[NEGATIVE] Save Payout – missing termsConsent",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
-                  "const d = pm.response.json();",
-                  "pm.test('Error mentions terms or consent', () => pm.expect(d.error || d.message).to.include('terms' || 'consent'));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"accountHolderName\": \"Dr. Test\",\n  \"accountNumber\": \"1234567890\",\n  \"ifscCode\": \"HDFC0001234\",\n  \"bankName\": \"HDFC Bank\",\n  \"branchName\": \"Branch\",\n  \"panNumber\": \"ABCDE1234F\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/payout",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "payout"]
-            }
-          }
-        },
-        {
-          "name": "[NEGATIVE] Save Payout – termsConsent=false",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"accountHolderName\": \"Dr. Test\",\n  \"accountNumber\": \"1234567890\",\n  \"ifscCode\": \"HDFC0001234\",\n  \"bankName\": \"HDFC\",\n  \"branchName\": \"Branch\",\n  \"panNumber\": \"ABCDE1234F\",\n  \"termsConsent\": false\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/payout",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "payout"]
-            }
-          }
-        },
-        {
-          "name": "[NEGATIVE] Add Experience – missing endDate for past work",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"organization\": \"Past Clinic\",\n  \"role\": \"Consultant\",\n  \"workType\": \"clinic\",\n  \"currentlyWorking\": false,\n  \"startDate\": \"2018-01-01\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/work-experience",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "work-experience"]
-            }
-          }
-        },
-        {
-          "name": "[NEGATIVE] Add Experience – workType='other' without customWorkType",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
-                  "const d = pm.response.json();",
-                  "pm.test('Error mentions custom work type', () => pm.expect(d.error || d.message).to.include('custom' || 'workType'));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"organization\": \"Unknown Org\",\n  \"role\": \"Consultant\",\n  \"workType\": \"other\",\n  \"currentlyWorking\": true,\n  \"startDate\": \"2024-01-01\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/work-experience",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "work-experience"]
-            }
-          }
-        },
-        {
-          "name": "[NEGATIVE] Save RCI Verification – missing certificate",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
-                  "const d = pm.response.json();",
-                  "pm.test('Error mentions RCI certificate', () => pm.expect(d.error || d.message).to.include('RCI' || 'certificate'));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"registrationType\": \"rci\",\n  \"rciCrrNumber\": \"RCI-12345\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/verification",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "verification"]
-            }
-          }
-        },
-        {
-          "name": "[NEGATIVE] Save 'none' Registration – missing declaration",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
-                  "const d = pm.response.json();",
-                  "pm.test('Error mentions self-declaration', () => pm.expect(d.error || d.message).to.include('declaration' || 'accepted'));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"registrationType\": \"none\",\n  \"selfDeclarationAccepted\": false\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/verification",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "verification"]
-            }
-          }
-        },
-        {
-          "name": "[NEGATIVE] API call – Missing Authorization header",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('401 Unauthorized', () => pm.response.to.have.status(401));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/basic-info",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "basic-info"]
-            }
-          }
-        },
-        {
-          "name": "[NEGATIVE] API call – Invalid JWT token",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('401 Unauthorized', () => pm.response.to.have.status(401));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer INVALID_TOKEN_12345"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/basic-info",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "basic-info"]
-            }
-          }
-        },
-        {
-          "name": "[NEGATIVE] API call – Non-existent resource",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('404 Not Found', () => pm.response.to.have.status(404));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/doctors/onboarding/qualifications/non-existent-id",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "doctors", "onboarding", "qualifications", "non-existent-id"]
-            }
-          }
-        }
-      ]
-    }
-  ]
 }

@@ -52,6 +52,10 @@ class OnboardingExperiencesController
 
         $input = $this->getJsonInput();
 
+        if (empty($input) && !empty($_POST)) {
+            $input = $_POST;
+        }
+
         // Validation
         $rules = [
             'organization' => ['required', 'string'],
@@ -59,21 +63,12 @@ class OnboardingExperiencesController
             'workType' => ['required', ['in', 'hospital', 'private_practice', 'ngo', 'online_platform', 'other']],
             'startDate' => ['required', 'date'],
             'endDate' => ['nullable', 'date'],
-            'currentlyWorking' => ['required', 'boolean'],
-            'description' => ['nullable', 'string'],
+            'yearsOfExperience' => ['nullable', 'numeric'],
         ];
 
         $validation = $this->validator->validate($input, $rules);
         if (!$validation['valid']) {
             Response::error('Validation failed', 400, 'VALIDATION_ERROR', $validation['errors']);
-            return;
-        }
-
-        // If not currently working, endDate is required
-        if (!$input['currentlyWorking'] && !isset($input['endDate'])) {
-            Response::error('Validation failed', 400, 'VALIDATION_ERROR', [
-                'endDate' => 'End date is required when not currently working'
-            ]);
             return;
         }
 
@@ -122,15 +117,14 @@ class OnboardingExperiencesController
             // Create experience record
             $experienceData = [
                 'doctor_id' => $userId,
-                'company' => $input['organization'],
-                'role_title' => $input['role'],
+                'organization' => $input['organization'],
+                'role' => $input['role'],
                 'work_type' => $input['workType'],
                 'custom_work_type' => $input['customWorkType'] ?? null,
                 'start_date' => $input['startDate'],
                 'end_date' => $input['endDate'] ?? null,
-                'currently_working' => $input['currentlyWorking'] ? 1 : 0,
-                'description' => $input['description'] ?? null,
-                'proof_document_url' => $proofUrl,
+                'experience_proof' => $proofUrl,
+                'years_of_experience' => isset($input['yearsOfExperience']) ? (int)$input['yearsOfExperience'] : null,
             ];
 
             $expId = $this->experienceModel->create($experienceData);
@@ -175,15 +169,14 @@ class OnboardingExperiencesController
         $formatted = array_map(function($exp) {
             return [
                 'id' => $exp['id'],
-                'organization' => $exp['company'],
-                'role' => $exp['role_title'],
+                'organization' => $exp['organization'],
+                'role' => $exp['role'],
                 'workType' => $exp['work_type'],
                 'customWorkType' => $exp['custom_work_type'],
                 'startDate' => $exp['start_date'],
                 'endDate' => $exp['end_date'],
-                'currentlyWorking' => (bool)$exp['currently_working'],
-                'description' => $exp['description'],
-                'proofDocumentUrl' => $exp['proof_document_url'],
+                'yearsOfExperience' => $exp['years_of_experience'],
+                'experienceProof' => $exp['experience_proof'],
                 'verificationStatus' => $exp['verification_status'] ?? 'pending',
                 'createdAt' => $exp['created_at'],
             ];
@@ -225,14 +218,13 @@ class OnboardingExperiencesController
         try {
             $updateData = [];
 
-            if (isset($input['organization'])) $updateData['company'] = $input['organization'];
-            if (isset($input['role'])) $updateData['role_title'] = $input['role'];
+            if (isset($input['organization'])) $updateData['organization'] = $input['organization'];
+            if (isset($input['role'])) $updateData['role'] = $input['role'];
             if (isset($input['workType'])) $updateData['work_type'] = $input['workType'];
             if (isset($input['customWorkType'])) $updateData['custom_work_type'] = $input['customWorkType'];
             if (isset($input['startDate'])) $updateData['start_date'] = $input['startDate'];
             if (isset($input['endDate'])) $updateData['end_date'] = $input['endDate'];
-            if (isset($input['currentlyWorking'])) $updateData['currently_working'] = $input['currentlyWorking'] ? 1 : 0;
-            if (isset($input['description'])) $updateData['description'] = $input['description'];
+            if (isset($input['yearsOfExperience'])) $updateData['years_of_experience'] = (int)$input['yearsOfExperience'];
 
             if (!empty($updateData)) {
                 $this->experienceModel->update($id, $updateData);

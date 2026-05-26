@@ -24,36 +24,32 @@ class DoctorExperience
     /**
      * Create a new experience record.
      *
-     * @param array $data Keys: doctor_id, company, role_title, work_type, custom_work_type,
-     *                    currently_working, start_date, end_date, description, proof_document_url
+     * @param array $data Keys: doctor_id, organization, role, work_type, custom_work_type,
+     *                    start_date, end_date, experience_proof, years_of_experience
      * @return string UUID of the created record
      */
     public function create(array $data): string
     {
         $stmt = $this->db->prepare('
             INSERT INTO doctor_experiences
-                (doctor_id, company, role_title, work_type,
-                 custom_work_type, currently_working, start_date, end_date,
-                 description, proof_document_url)
+                (doctor_id, organization, role, work_type,
+                 custom_work_type, start_date, end_date,
+                 experience_proof, years_of_experience)
             VALUES
-                (:doctor_id, :company, :role_title, :work_type,
-                 :custom_work_type, :currently_working, :start_date, :end_date,
-                 :description, :proof_document_url)
+                (:doctor_id, :organization, :role, :work_type,
+                 :custom_work_type, :start_date, :end_date,
+                 :experience_proof, :years_of_experience)
         ');
-        // Support canonical names: organization→company, role→role_title
-        $company = $data['company'] ?? $data['organization'] ?? null;
-        $roleTitle = $data['role_title'] ?? $data['role'] ?? null;
         $stmt->execute([
             ':doctor_id'           => $data['doctor_id'],
-            ':company'             => $company,
-            ':role_title'          => $roleTitle,
+            ':organization'        => $data['organization'] ?? null,
+            ':role'                => $data['role'] ?? null,
             ':work_type'           => $data['work_type'] ?? 'hospital',
             ':custom_work_type'    => $data['custom_work_type'] ?? null,
-            ':currently_working'   => (int)(!empty($data['currently_working'])),
             ':start_date'          => $data['start_date'],
             ':end_date'            => $data['end_date'] ?? null,
-            ':description'         => $data['description'] ?? null,
-            ':proof_document_url'  => $data['proof_document_url'] ?? null,
+            ':experience_proof'    => $data['experience_proof'] ?? null,
+            ':years_of_experience' => $data['years_of_experience'] ?? null,
         ]);
 
         return $this->fetchLastId($data['doctor_id']);
@@ -98,22 +94,15 @@ class DoctorExperience
 
     /**
      * Update specific fields of an experience record.
-     * Supports both canonical names (organization, role) and legacy names (company, role_title)
+     * Supports canonical names (organization, role)
      */
     public function update(string $id, array $data): bool
     {
         $allowed = [
-            'company', 'role_title', 'work_type',
-            'custom_work_type', 'currently_working',
-            'start_date', 'end_date', 'description', 'proof_document_url',
+            'organization', 'role', 'work_type',
+            'custom_work_type', 'start_date', 'end_date',
+            'experience_proof', 'years_of_experience'
         ];
-        // Handle canonical name aliases
-        if (isset($data['organization']) && !isset($data['company'])) {
-            $data['company'] = $data['organization'];
-        }
-        if (isset($data['role']) && !isset($data['role_title'])) {
-            $data['role_title'] = $data['role'];
-        }
         $sets   = [];
         $params = [];
         foreach ($allowed as $col) {
