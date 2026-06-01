@@ -938,12 +938,48 @@
                             },
                             {
                                 "key": "Content-Type",
-                                "value": "application/json"
+                                "value": "multipart/form-data"
                             }
                         ],
                         "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"organization\": \"City Mental Health Clinic\",\n  \"role\": \"Senior Clinical Psychologist\",\n  \"workType\": \"clinic\",\n  \"startDate\": \"2018-01-15\",\n  \"endDate\": null\n}"
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "organization",
+                                    "value": "City Mental Health Clinic",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "role",
+                                    "value": "Senior Clinical Psychologist",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "workType",
+                                    "value": "hospital",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "startDate",
+                                    "value": "2018-01-15",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "endDate",
+                                    "value": "",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "yearsOfExperience",
+                                    "value": "5",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "experienceProof",
+                                    "type": "file",
+                                    "src": ""
+                                }
+                            ]
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/doctors/onboarding/work-experience",

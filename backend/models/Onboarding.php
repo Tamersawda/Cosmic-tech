@@ -26,10 +26,10 @@ class Onboarding
         $stmt = $this->db->prepare('
             SELECT 
                 u.registration_step,
-                u.onboarding_completed,
-                u.onboarding_submitted_at,
+                u.is_profile_completed,
+                u.submitted_at,
                 dp.verification_status,
-                dp.submitted_at,
+                dp.submitted_at as profile_submitted_at,
                 dp.reviewed_at
             FROM users u
             LEFT JOIN doctor_profiles dp ON u.id = dp.user_id

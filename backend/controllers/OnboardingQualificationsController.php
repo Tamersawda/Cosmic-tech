@@ -82,10 +82,11 @@ class OnboardingQualificationsController
             $certificateUrl = null;
 
             // Handle certificate upload if provided
-            if (isset($_FILES['certificate']) && $_FILES['certificate']['error'] === UPLOAD_ERR_OK) {
+            $certFile = $_FILES['certificateUrl'] ?? $_FILES['document'] ?? $_FILES['certificate'] ?? null;
+            if ($certFile && $certFile['error'] === UPLOAD_ERR_OK) {
                 try {
                     $certificateUrl = $this->fileUploader->uploadQualificationDocument(
-                        $_FILES['certificate'],
+                        $certFile,
                         $userId
                     );
                 } catch (\Exception $e) {
@@ -109,6 +110,9 @@ class OnboardingQualificationsController
                 Response::error('Failed to create qualification', 500);
                 return;
             }
+
+            // Update registration step to 3 (Qualifications step)
+            $this->onboardingModel->updateRegistrationStep($userId, 3);
 
             // Log action
             $this->onboardingModel->logVerificationAction(
@@ -277,6 +281,7 @@ class OnboardingQualificationsController
     private function getJsonInput(): array
     {
         $input = json_decode(file_get_contents('php://input'), true);
-        return is_array($input) ? $input : [];
+        $json = is_array($input) ? $input : [];
+        return array_merge($_POST, $json);
     }
 }

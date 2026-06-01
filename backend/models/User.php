@@ -19,7 +19,7 @@ class User {
         $stmt = $this->db->prepare('
             SELECT id, email, password, user_type, full_name,
                    is_active, is_email_verified, created_at, updated_at,
-                   is_profile_complete, is_profile_approved, onboarding_step
+                   is_profile_completed, registration_step
             FROM users
             WHERE email = ?
             LIMIT 1
@@ -40,7 +40,7 @@ class User {
         $stmt = $this->db->prepare('
             SELECT id, email, user_type, full_name,
                    is_active, is_email_verified, created_at, updated_at,
-                   is_profile_complete, is_profile_approved, onboarding_step
+                   is_profile_completed, registration_step
             FROM users
             WHERE id = ?
             LIMIT 1
@@ -217,5 +217,18 @@ class User {
         $data[6] = chr(ord($data[6]) & 0x0f | 0x40);
         $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
         return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+    }
+
+    /**
+     * Update is_profile_completed flag for a user.
+     * Called when onboarding is submitted (after payout).
+     */
+    public function updateProfileCompletion(string $userId, bool $completed): bool {
+        $stmt = $this->db->prepare('
+            UPDATE users
+            SET is_profile_completed = ?, updated_at = UTC_TIMESTAMP()
+            WHERE id = ?
+        ');
+        return $stmt->execute([$completed ? 1 : 0, $userId]);
     }
 }

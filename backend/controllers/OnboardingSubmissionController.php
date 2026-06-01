@@ -73,14 +73,14 @@ class OnboardingSubmissionController
                 return;
             }
 
-            // Update onboarding status
-            $this->onboardingModel->completeOnboarding($userId);
+            // Update user table with profile completion flag
+            $userModel = new \Backend\Models\User();
+            $userModel->updateProfileCompletion($userId, true);
 
-            // Update profile with submission timestamp and verification status
+            // Update doctor profile with verification status and submission timestamp
             $this->doctorModel->update($userId, [
-                'verification_status' => 'submitted',
+                'verification_status' => 'pending',
                 'submitted_at' => date('Y-m-d H:i:s'),
-                'is_profile_complete' => true,
             ]);
 
             // Log submission action
@@ -89,7 +89,7 @@ class OnboardingSubmissionController
                 'profile_submitted_for_review',
                 7,
                 'in_progress',
-                'submitted'
+                'pending'
             );
 
             // Send notification to doctor
@@ -138,13 +138,12 @@ class OnboardingSubmissionController
 
         Response::success([
             'registrationStep'    => $onboardingState['registration_step'] ?? 0,
-            'isProfileCompleted'  => (bool)($onboardingState['onboarding_completed'] ?? false),
-            'onboardingCompleted' => (bool)($onboardingState['onboarding_completed'] ?? false), // legacy alias
-            'verificationStatus'  => $profile['verification_status'] ?? 'draft',
+            'isProfileCompleted'  => (bool)($onboardingState['is_profile_completed'] ?? false),
+            'verificationStatus'  => $profile['verification_status'] ?? 'pending',
             'completedSteps'      => $completedSteps,
             'totalSteps'          => 7,
             'progressPercent'     => count($completedSteps) > 0 ? (int)round((count($completedSteps) / 7) * 100) : 0,
-            'submittedAt'         => $profile['submitted_at'] ?? null,
+            'submittedAt'         => $onboardingState['profile_submitted_at'] ?? null,
             'reviewedAt'          => $profile['reviewed_at'] ?? null,
             'rejectionReason'     => $profile['rejected_reason'] ?? null,
         ]);

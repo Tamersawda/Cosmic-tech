@@ -102,10 +102,11 @@ class OnboardingExperiencesController
             $proofUrl = null;
 
             // Handle proof document upload if provided
-            if (isset($_FILES['proofDocument']) && $_FILES['proofDocument']['error'] === UPLOAD_ERR_OK) {
+            // Blueprint field name: experienceProof
+            if (isset($_FILES['experienceProof']) && $_FILES['experienceProof']['error'] === UPLOAD_ERR_OK) {
                 try {
                     $proofUrl = $this->fileUploader->uploadExperienceProof(
-                        $_FILES['proofDocument'],
+                        $_FILES['experienceProof'],
                         $userId
                     );
                 } catch (\Exception $e) {
@@ -133,6 +134,9 @@ class OnboardingExperiencesController
                 Response::error('Failed to create experience', 500);
                 return;
             }
+
+            // Update registration step to 5 (Work Experience step)
+            $this->onboardingModel->updateRegistrationStep($userId, 5);
 
             // Log action
             $this->onboardingModel->logVerificationAction(
@@ -288,7 +292,8 @@ class OnboardingExperiencesController
     private function getJsonInput(): array
     {
         $input = json_decode(file_get_contents('php://input'), true);
-        return is_array($input) ? $input : [];
+        $json = is_array($input) ? $input : [];
+        return array_merge($_POST, $json);
     }
 
     private function getIdFromUrl(): ?string

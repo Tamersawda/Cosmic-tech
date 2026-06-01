@@ -183,6 +183,7 @@ class OnboardingPricingController
     private function getJsonInput(): array
     {
         $input = json_decode(file_get_contents('php://input'), true);
-        return is_array($input) ? $input : [];
+        $json = is_array($input) ? $input : [];
+        return array_merge($_POST, $json);
     }
 }

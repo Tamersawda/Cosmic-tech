@@ -3,12 +3,16 @@
 namespace Backend\Controllers;
 
 use Backend\Models\DoctorPayoutAccount;
+use Backend\Models\DoctorProfile;
 use Backend\Models\Onboarding;
+use Backend\Models\User;
 use Backend\Utils\Response;
 use Backend\Utils\Validator;
 
 require_once __DIR__ . '/../models/DoctorPayoutAccount.php';
+require_once __DIR__ . '/../models/DoctorProfile.php';
 require_once __DIR__ . '/../models/Onboarding.php';
+require_once __DIR__ . '/../models/User.php';
 require_once __DIR__ . '/../utils/Response.php';
 require_once __DIR__ . '/../utils/Validator.php';
 
@@ -22,12 +26,14 @@ require_once __DIR__ . '/../utils/Validator.php';
 class OnboardingPayoutController
 {
     private DoctorPayoutAccount $payoutModel;
+    private DoctorProfile $doctorModel;
     private Onboarding $onboardingModel;
     private Validator $validator;
 
     public function __construct()
     {
         $this->payoutModel = new DoctorPayoutAccount();
+        $this->doctorModel = new DoctorProfile();
         $this->onboardingModel = new Onboarding();
         $this->validator = new Validator();
     }
@@ -157,6 +163,15 @@ class OnboardingPayoutController
             // Update registration step to complete
             $this->onboardingModel->updateRegistrationStep($userId, 7);
 
+            // After payout is complete, mark profile as complete and set verification status
+            $userModel = new User();
+            $userModel->updateProfileCompletion($userId, true);
+
+            // Update verification status to pending (ready for admin review)
+            $this->doctorModel->update($userId, [
+                'verification_status' => 'pending',
+            ]);
+
             // Log action
             $this->onboardingModel->logVerificationAction(
                 $userId,
@@ -230,6 +245,7 @@ class OnboardingPayoutController
     private function getJsonInput(): array
     {
         $input = json_decode(file_get_contents('php://input'), true);
-        return is_array($input) ? $input : [];
+        $json = is_array($input) ? $input : [];
+        return array_merge($_POST, $json);
     }
 }
