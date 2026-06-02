@@ -30,9 +30,9 @@ class DoctorPayoutAccount
         $stmt = $this->db->prepare('
             INSERT INTO doctor_payout_accounts
             (id, doctor_id, account_holder_name, account_number, ifsc_code, bank_name, 
-             branch_name, pan_number, is_gst_registered, gst_number, is_primary, 
+             pan_number, is_gst_registered, gst_number, is_primary, 
              terms_consent, verification_status, created_at, updated_at)
-            VALUES (UUID(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            VALUES (UUID(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         ');
 
         $success = $stmt->execute([
@@ -41,7 +41,6 @@ class DoctorPayoutAccount
             $data['account_number'],
             $data['ifsc_code'],
             $data['bank_name'],
-            $data['branch_name'],
             $data['pan_number'] ?? null,
             $data['is_gst_registered'] ? 1 : 0,
             $data['gst_number'] ?? null,

@@ -75,11 +75,15 @@ class AdminController {
 
     // ─────────────────────────────────────────────────────────
     // PATCH /api/admin/verify-doctor
+    // PUT   /api/admin/doctors/{doctorId}/verify
     // ─────────────────────────────────────────────────────────
-    public function verifyDoctor(object $payload): void {
+    public function verifyDoctor(object $payload, ?string $doctorId = null): void {
         AuthMiddleware::requireRole($payload, 'admin');
 
         $input = $this->getInputData();
+        if ($doctorId !== null) {
+            $input['doctorId'] = $doctorId;
+        }
 
         $result = $this->validator->validate($input, [
             'doctorId' => ['required', 'string'],
@@ -97,7 +101,10 @@ class AdminController {
                 return;
             }
 
-            $this->doctorModel->verifyDoctor($input['doctorId'], $input['status']);
+            if (!$this->doctorModel->verifyDoctor($input['doctorId'], $input['status'])) {
+                Response::error('Failed to update verification status', 500, 'SERVER_ERROR');
+                return;
+            }
 
             Response::success([
                 'doctorId' => $input['doctorId'],

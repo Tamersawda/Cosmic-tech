@@ -61,6 +61,21 @@ class OnboardingProfessionalDetailsController
 
         $input = $this->getJsonInput();
 
+        // Parse JSON strings from form data (when sent via multipart/form-data)
+        if (isset($input['specializations']) && is_string($input['specializations'])) {
+            $input['specializations'] = json_decode($input['specializations'], true) ?? [];
+        }
+        if (isset($input['therapyApproaches']) && is_string($input['therapyApproaches'])) {
+            $input['therapyApproaches'] = json_decode($input['therapyApproaches'], true) ?? [];
+        }
+        if (isset($input['languages']) && is_string($input['languages'])) {
+            $input['languages'] = json_decode($input['languages'], true) ?? [];
+        }
+        // Also handle alternate field name
+        if (isset($input['languagesSpoken']) && is_string($input['languagesSpoken'])) {
+            $input['languagesSpoken'] = json_decode($input['languagesSpoken'], true) ?? [];
+        }
+
         // Normalize field aliases
         // Frontend (canonical): languagesSpoken | Legacy: languages
         if (!isset($input['languages']) && isset($input['languagesSpoken'])) {
@@ -180,7 +195,7 @@ class OnboardingProfessionalDetailsController
                 'message' => 'Professional details saved successfully',
                 'step' => 2,
                 'nextStep' => 3,
-            ], 200);
+            ], 'Professional details saved successfully', 200);
 
         } catch (\Exception $e) {
             Response::error('Failed to save professional details: ' . $e->getMessage(), 500);

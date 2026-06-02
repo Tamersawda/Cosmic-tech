@@ -137,7 +137,7 @@ class OnboardingBasicInfoController
                 'message' => 'Basic information saved successfully',
                 'step' => 1,
                 'nextStep' => 2,
-            ], 200);
+            ], 'Basic information saved successfully', 200);
 
         } catch (\Exception $e) {
             Response::error('Failed to save basic information: ' . $e->getMessage(), 500);

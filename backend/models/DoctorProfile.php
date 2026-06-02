@@ -121,6 +121,65 @@ class DoctorProfile {
         }
     }
 
+    /**
+     * Update specific fields in a doctor profile (partial update).
+     * Accepts snake_case column names like: phone_number, gender, date_of_birth, profile_photo_url
+     */
+    public function update(string $userId, array $data): bool {
+        if (empty($data)) {
+            return true; // No-op if empty
+        }
+
+        // Allowed columns for partial updates
+        $allowedColumns = [
+            'phone_number',
+            'gender',
+            'date_of_birth',
+            'profile_photo_url',
+            'primary_specialty',
+            'primary_title',
+            'secondary_title',
+            'professional_bio',
+            'languages_spoken',
+            'therapy_approaches',
+            'sub_specializations',
+            'govt_id_front_url',
+            'govt_id_back_url',
+        ];
+
+        // Build dynamic SET clause
+        $setClauses = [];
+        $values = [];
+
+        foreach ($data as $key => $value) {
+            if (in_array($key, $allowedColumns)) {
+                // Handle JSON fields
+                if (in_array($key, ['languages_spoken', 'therapy_approaches'])) {
+                    $value = is_array($value) ? json_encode($value) : $value;
+                }
+                $setClauses[] = "{$key} = ?";
+                $values[] = $value;
+            }
+        }
+
+        if (empty($setClauses)) {
+            return true; // No valid fields to update
+        }
+
+        $setClauses[] = "updated_at = UTC_TIMESTAMP()";
+        $values[] = $userId;
+
+        $sql = 'UPDATE doctor_profiles SET ' . implode(', ', $setClauses) . ' WHERE user_id = ?';
+
+        try {
+            $stmt = $this->db->prepare($sql);
+            return $stmt->execute($values);
+        } catch (\Exception $e) {
+            error_log('Doctor profile update error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     public function setupProfile(string $userId, array $data): bool {
         $stmt = $this->db->prepare('
             UPDATE doctor_profiles

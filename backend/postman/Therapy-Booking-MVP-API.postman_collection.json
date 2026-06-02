@@ -61,6 +61,13 @@
                                     "const d = pm.response.json();",
                                     "if (d.success && d.data) {",
                                     "  pm.collectionVariables.set('token', d.data.token);",
+                                    "  pm.collectionVariables.set('refreshToken', d.data.refreshToken);",
+                                    "  pm.environment.set('token', d.data.token);",
+                                    "  pm.environment.set('refreshToken', d.data.refreshToken);",
+                                    "  if (d.data.role === 'admin') {",
+                                    "    pm.collectionVariables.set('adminToken', d.data.token);",
+                                    "    pm.environment.set('adminToken', d.data.token);",
+                                    "  }",
                                     "  pm.collectionVariables.set('doctorId', d.data.userId || d.data.id);",
                                     "}",
                                     "pm.test('201 Created', () => pm.response.to.have.status(201));",
@@ -147,6 +154,13 @@
                                     "const d = pm.response.json();",
                                     "if (d.success && d.data) {",
                                     "  pm.collectionVariables.set('token', d.data.token);",
+                                    "  pm.collectionVariables.set('refreshToken', d.data.refreshToken);",
+                                    "  pm.environment.set('token', d.data.token);",
+                                    "  pm.environment.set('refreshToken', d.data.refreshToken);",
+                                    "  if (d.data.role === 'admin') {",
+                                    "    pm.collectionVariables.set('adminToken', d.data.token);",
+                                    "    pm.environment.set('adminToken', d.data.token);",
+                                    "  }",
                                     "  pm.collectionVariables.set('doctorId', d.data.userId || d.data.id);",
                                     "}",
                                     "pm.test('200 OK', () => pm.response.to.have.status(200));",
@@ -367,7 +381,7 @@
                             "formdata": [
                                 {
                                     "key": "phoneNumber",
-                                    "value": "+1-555-0123",
+                                    "value": "+1-555-0123456",
                                     "type": "text"
                                 },
                                 {
@@ -484,22 +498,22 @@
                                 },
                                 {
                                     "key": "specializations",
-                                    "value": "Anxiety Disorders, Depression, PTSD",
+                                    "value": "[\"Anxiety Disorders\", \"Depression\", \"PTSD\"]",
                                     "type": "text"
                                 },
                                 {
-                                    "key": "languagesSpoken",
-                                    "value": "English, Hindi, Spanish",
+                                    "key": "languages",
+                                    "value": "[\"English\", \"Hindi\", \"Spanish\"]",
                                     "type": "text"
                                 },
                                 {
-                                    "key": "professionalBio",
+                                    "key": "bio",
                                     "value": "8+ years of clinical experience specializing in cognitive behavioral therapy",
                                     "type": "text"
                                 },
                                 {
                                     "key": "therapyApproaches",
-                                    "value": "individual, couples, family",
+                                    "value": "[\"individual\", \"couples\", \"family\"]",
                                     "type": "text"
                                 },
                                 {
@@ -1235,7 +1249,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"accountHolderName\": \"Dr. Jane Smith\",\n  \"accountNumber\": \"1234567890\",\n  \"ifscCode\": \"HDFC0001234\",\n  \"bankName\": \"HDFC Bank\",\n  \"branchName\": \"New York Branch\",\n  \"panNumber\": \"ABCDE1234F\",\n  \"isGstRegistered\": false,\n  \"gstNumber\": null,\n  \"termsConsent\": true\n}"
+                            "raw": "{\n  \"accountHolderName\": \"Dr. Jane Smith\",\n  \"accountNumber\": \"1234567890\",\n  \"ifscCode\": \"HDFC0001234\",\n  \"bankName\": \"HDFC Bank\",\n  \"panNumber\": \"ABCDE1234F\",\n  \"isGstRegistered\": false,\n  \"gstNumber\": null,\n  \"termsConsent\": true\n}"
                         },
                         "url": {
                             "raw": "{{baseUrl}}/api/doctors/onboarding/payout",

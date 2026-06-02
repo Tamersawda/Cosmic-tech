@@ -29,8 +29,7 @@ class Onboarding
                 u.is_profile_completed,
                 u.submitted_at,
                 dp.verification_status,
-                dp.submitted_at as profile_submitted_at,
-                dp.reviewed_at
+                dp.submitted_at as profile_submitted_at
             FROM users u
             LEFT JOIN doctor_profiles dp ON u.id = dp.user_id
             WHERE u.id = ? AND u.user_type = "doctor"

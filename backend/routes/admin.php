@@ -9,6 +9,7 @@ use Backend\Utils\Response;
  *
  * POST  /api/admin/create-admin     - Create admin user (admin only)
  * PATCH /api/admin/verify-doctor    - Approve/reject doctor (admin only)
+ * PUT   /api/admin/doctors/{id}/verify - Approve/reject doctor (admin only)
  * GET   /api/admin/doctors          - List all doctors (admin only)
  * GET   /api/admin/appointments     - List all appointments (admin only)
  */
@@ -38,6 +39,13 @@ return function(string $method, string $path) {
     if ($method === 'PATCH' && $normalizedPath === '/verify-doctor') {
         $payload = AuthMiddleware::authenticate();
         $controller->verifyDoctor($payload);
+        return;
+    }
+
+    // ── PUT /api/admin/doctors/{doctorId}/verify ──
+    if ($method === 'PUT' && preg_match('#^/doctors/([0-9a-f\-]+)/verify$#i', $normalizedPath, $matches)) {
+        $payload = AuthMiddleware::authenticate();
+        $controller->verifyDoctor($payload, $matches[1]);
         return;
     }
 
