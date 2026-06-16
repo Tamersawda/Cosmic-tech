@@ -3,11 +3,16 @@
 namespace Backend\Models;
 
 use Backend\Config\Database;
+use Backend\Services\ProfileStatusService;
 use PDO;
 
 /**
  * DoctorProfile Model
- * Manages doctor_profiles and doctor_qualifications tables.
+ * Manages doctor_profiles table with the new status-based workflow.
+ * 
+ * Profile Status: draft → submitted → approved → payout_pending → active
+ * Registration Steps: basic_info → professional_details → qualifications →
+ *                     professional_registration → work_experience → session_fee → completed
  */
 class DoctorProfile {
     private PDO $db;
@@ -16,6 +21,10 @@ class DoctorProfile {
         $this->db = Database::getInstance();
     }
 
+    // ──────────────────────────────────────────────
+    // Basic CRUD Operations
+    // ──────────────────────────────────────────────
+
     /**
      * Get a doctor profile by user ID.
      */
@@ -23,6 +32,42 @@ class DoctorProfile {
         $stmt = $this->db->prepare('
             SELECT * FROM doctor_profiles
             WHERE user_id = ?
+            LIMIT 1
+        ');
+        $stmt->execute([$userId]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($result) {
+            if ($result['languages_spoken']) {
+                $result['languages_spoken'] = json_decode($result['languages_spoken'], true);
+            }
+            if ($result['sub_specializations']) {
+                $result['sub_specializations'] = json_decode($result['sub_specializations'], true);
+            }
+            if ($result['therapy_approaches']) {
+                $result['therapy_approaches'] = json_decode($result['therapy_approaches'], true);
+            }
+        }
+
+        return $result ?: null;
+    }
+
+    /**
+     * Get doctor profile with joined user data (for admin panel).
+     */
+    public function findByUserIdWithUser(string $userId): ?array {
+        $stmt = $this->db->prepare('
+            SELECT 
+                dp.*,
+                u.full_name,
+                u.email,
+                u.is_active AS user_is_active,
+                u.is_email_verified,
+                reviewer.full_name AS reviewed_by_name
+            FROM doctor_profiles dp
+            JOIN users u ON dp.user_id = u.id
+            LEFT JOIN users reviewer ON dp.reviewed_by = reviewer.id
+            WHERE dp.user_id = ?
             LIMIT 1
         ');
         $stmt->execute([$userId]);
@@ -67,31 +112,27 @@ class DoctorProfile {
     }
 
     /**
-     * Update the doctor profile with the data supplied via /api/doctors/setup.
-     * All column names match the combined_schema.sql exactly.
-     */
-    /**
-     * Update the doctor profile with the data supplied via /api/doctors/setup.
-     * All column names match the combined_schema.sql exactly.
-     */
-    /**
-     * Create a new doctor profile.
+     * Create a new doctor profile skeleton row on registration.
+     * Profile starts at: profile_status = draft, registration_step = basic_info
      */
     public function create(array $data): bool {
         $stmt = $this->db->prepare('
             INSERT INTO doctor_profiles (
-                user_id, gender, date_of_birth, phone_number, profile_photo_url,
+                user_id, profile_status, registration_step,
+                gender, date_of_birth, phone_number, profile_photo_url,
                 primary_specialty, sub_specializations, therapy_approaches,
                 license_number, medical_council, languages_spoken,
                 video_enabled, video_rate, audio_enabled, audio_rate,
                 consultation_duration, buffer_time, is_active, street_address,
                 city, state, country, postal_code, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP())
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP())
         ');
 
         try {
             return $stmt->execute([
                 $data['user_id'],
+                $data['profile_status'] ?? 'draft',
+                $data['registration_step'] ?? 'basic_info',
                 $data['gender'] ?? 'other',
                 $data['date_of_birth'] ?? null,
                 $data['phone_number'] ?? null,
@@ -113,7 +154,7 @@ class DoctorProfile {
                 $data['city'] ?? null,
                 $data['state'] ?? null,
                 $data['country'] ?? null,
-                $data['postal_code'] ?? null
+                $data['postal_code'] ?? null,
             ]);
         } catch (\Exception $e) {
             error_log('Doctor profile create error: ' . $e->getMessage());
@@ -123,11 +164,10 @@ class DoctorProfile {
 
     /**
      * Update specific fields in a doctor profile (partial update).
-     * Accepts snake_case column names like: phone_number, gender, date_of_birth, profile_photo_url
      */
     public function update(string $userId, array $data): bool {
         if (empty($data)) {
-            return true; // No-op if empty
+            return true;
         }
 
         // Allowed columns for partial updates
@@ -145,6 +185,8 @@ class DoctorProfile {
             'sub_specializations',
             'govt_id_front_url',
             'govt_id_back_url',
+            'registration_step',
+            'admin_note',
         ];
 
         // Build dynamic SET clause
@@ -154,7 +196,7 @@ class DoctorProfile {
         foreach ($data as $key => $value) {
             if (in_array($key, $allowedColumns)) {
                 // Handle JSON fields
-                if (in_array($key, ['languages_spoken', 'therapy_approaches'])) {
+                if (in_array($key, ['languages_spoken', 'therapy_approaches', 'sub_specializations'])) {
                     $value = is_array($value) ? json_encode($value) : $value;
                 }
                 $setClauses[] = "{$key} = ?";
@@ -163,7 +205,7 @@ class DoctorProfile {
         }
 
         if (empty($setClauses)) {
-            return true; // No valid fields to update
+            return true;
         }
 
         $setClauses[] = "updated_at = UTC_TIMESTAMP()";
@@ -180,6 +222,10 @@ class DoctorProfile {
         }
     }
 
+    /**
+     * Bulk update profile from onboarding setup endpoint.
+     * Saves all onboarding form data in a single UPDATE.
+     */
     public function setupProfile(string $userId, array $data): bool {
         $stmt = $this->db->prepare('
             UPDATE doctor_profiles
@@ -238,9 +284,12 @@ class DoctorProfile {
         }
     }
 
+    // ──────────────────────────────────────────────
+    // Qualification Management
+    // ──────────────────────────────────────────────
+
     /**
      * Add a qualification row for a doctor.
-     * Returns the new qualification UUID.
      */
     public function addQualification(string $doctorId, array $data): string {
         $qualificationId = $this->generateUUID();
@@ -318,9 +367,12 @@ class DoctorProfile {
         }
     }
 
+    // ──────────────────────────────────────────────
+    // Appointment Queries
+    // ──────────────────────────────────────────────
+
     /**
-     * Get upcoming/past appointments for a doctor, optionally filtered by status.
-     * Joins users for client name.
+     * Get upcoming/past appointments for a doctor.
      */
     public function getAppointments(string $doctorId, ?string $status = null): array {
         $query = '
@@ -353,6 +405,10 @@ class DoctorProfile {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    // ──────────────────────────────────────────────
+    // Existence Checks
+    // ──────────────────────────────────────────────
+
     /**
      * Check whether a doctor profile exists for the given user ID.
      */
@@ -364,8 +420,13 @@ class DoctorProfile {
         return $stmt->fetch(PDO::FETCH_ASSOC) !== false;
     }
 
+    // ──────────────────────────────────────────────
+    // List / Query Operations
+    // ──────────────────────────────────────────────
+
     /**
-     * List all doctors with their basic profile information.
+     * List all fully active and approved doctors (for public listing).
+     * Uses profile_status = 'active' instead of old is_verified + is_active.
      */
     public function getAllDoctors(): array {
         try {
@@ -379,7 +440,7 @@ class DoctorProfile {
                     dp.video_enabled,
                     dp.video_rate,
                     dp.consultation_duration,
-                    dp.is_verified,
+                    dp.profile_status,
                     dp.is_active,
                     dp.profile_photo_url,
                     u.email,
@@ -388,7 +449,7 @@ class DoctorProfile {
                 JOIN users u ON dp.user_id = u.id
                 WHERE u.is_active = 1
                 AND dp.is_active = 1
-                AND dp.is_verified = 1
+                AND dp.profile_status = "active"
                 ORDER BY u.full_name ASC
             ');
             $stmt->execute();
@@ -408,14 +469,35 @@ class DoctorProfile {
     }
 
     /**
-     * Generate a v4 UUID.
+     * Get doctors filtered by profile status (for admin panel).
      */
-    private function generateUUID(): string {
-        $data = openssl_random_pseudo_bytes(16);
-        $data[6] = chr(ord($data[6]) & 0x0f | 0x40);
-        $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
-        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+    public function getByProfileStatus(string $status, int $limit = 50, int $offset = 0): array {
+        $stmt = $this->db->prepare('
+            SELECT
+                dp.user_id,
+                u.full_name,
+                u.email,
+                dp.primary_specialty,
+                dp.profile_status,
+                dp.registration_step,
+                dp.submitted_at,
+                dp.reviewed_at,
+                dp.admin_note,
+                dp.profile_photo_url
+            FROM doctor_profiles dp
+            JOIN users u ON dp.user_id = u.id
+            WHERE dp.profile_status = ?
+            ORDER BY dp.updated_at DESC
+            LIMIT ? OFFSET ?
+        ');
+        $stmt->execute([$status, $limit, $offset]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    // ──────────────────────────────────────────────
+    // Status & Profile Management
+    // ──────────────────────────────────────────────
+
     /**
      * Update doctor availability status.
      */
@@ -429,35 +511,34 @@ class DoctorProfile {
     }
 
     /**
-     * Verify or reject a doctor.
+     * Verify or reject a doctor (DEPRECATED — use ProfileStatusService instead).
+     * Kept for backward compatibility during migration period.
+     * 
+     * @deprecated Use ProfileStatusService::approveProfile() or rejectProfile()
      */
     public function verifyDoctor(string $userId, string $status): bool {
-        $isApproved = ($status === 'approved') ? 1 : 0;
-        
-        $this->db->beginTransaction();
-        try {
-            // Update doctor_profiles
-            $stmt1 = $this->db->prepare('
-                UPDATE doctor_profiles
-                SET verification_status = ?, is_verified = ?, is_profile_approved = ?, updated_at = UTC_TIMESTAMP()
-                WHERE user_id = ?
-            ');
-            $stmt1->execute([$status, $isApproved, $isApproved, $userId]);
+        $service = new ProfileStatusService();
 
-            // Sync with users table
-            $stmt2 = $this->db->prepare('
-                UPDATE users
-                SET is_profile_approved = ?
-                WHERE id = ?
-            ');
-            $stmt2->execute([$isApproved, $userId]);
-
-            $this->db->commit();
-            return true;
-        } catch (\Exception $e) {
-            $this->db->rollBack();
-            error_log('Verify doctor error: ' . $e->getMessage());
-            return false;
+        if ($status === 'approved') {
+            $result = $service->approveProfile($userId, 'system');
+        } else {
+            $result = $service->rejectProfile($userId, 'system', 'Rejected via legacy method');
         }
+
+        return $result['success'];
+    }
+
+    // ──────────────────────────────────────────────
+    // Helpers
+    // ──────────────────────────────────────────────
+
+    /**
+     * Generate a v4 UUID.
+     */
+    private function generateUUID(): string {
+        $data = openssl_random_pseudo_bytes(16);
+        $data[6] = chr(ord($data[6]) & 0x0f | 0x40);
+        $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
     }
 }

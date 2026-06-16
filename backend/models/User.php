@@ -5,6 +5,14 @@ namespace Backend\Models;
 use Backend\Config\Database;
 use PDO;
 
+/**
+ * User Model
+ * 
+ * Manages the users table — the parent authentication table.
+ * Doctor profile status is now tracked in doctor_profiles.profile_status.
+ * The users.is_profile_completed column is deprecated in favor of
+ * querying doctor_profiles.profile_status directly.
+ */
 class User {
     private PDO $db;
 
@@ -12,14 +20,17 @@ class User {
         $this->db = Database::getInstance();
     }
 
+    // ──────────────────────────────────────────────
+    // Authentication Queries
+    // ──────────────────────────────────────────────
+
     /**
      * Find user by email — returns row including password hash for login.
      */
     public function findByEmail(string $email): ?array {
         $stmt = $this->db->prepare('
             SELECT id, email, password, user_type, full_name,
-                   is_active, is_email_verified, created_at, updated_at,
-                   is_profile_completed, registration_step
+                   is_active, is_email_verified, created_at, updated_at
             FROM users
             WHERE email = ?
             LIMIT 1
@@ -27,7 +38,6 @@ class User {
         $stmt->execute([$email]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($result) {
-            // Expose 'role' as alias for user_type so controllers use a stable field name
             $result['role'] = $result['user_type'];
         }
         return $result ?: null;
@@ -39,13 +49,35 @@ class User {
     public function findById(string $userId): ?array {
         $stmt = $this->db->prepare('
             SELECT id, email, user_type, full_name,
-                   is_active, is_email_verified, created_at, updated_at,
-                   is_profile_completed, registration_step
+                   is_active, is_email_verified, created_at, updated_at
             FROM users
             WHERE id = ?
             LIMIT 1
         ');
         $stmt->execute([$userId]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($result) {
+            $result['role'] = $result['user_type'];
+        }
+        return $result ?: null;
+    }
+
+    /**
+     * Find user with doctor profile status (for login routing).
+     * Joins doctor_profiles to get profile_status and registration_step.
+     */
+    public function findDoctorWithStatus(string $email): ?array {
+        $stmt = $this->db->prepare('
+            SELECT 
+                u.id, u.email, u.password, u.user_type, u.full_name,
+                u.is_active, u.is_email_verified, u.created_at,
+                dp.profile_status, dp.registration_step, dp.admin_note
+            FROM users u
+            LEFT JOIN doctor_profiles dp ON u.id = dp.user_id
+            WHERE u.email = ?
+            LIMIT 1
+        ');
+        $stmt->execute([$email]);
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($result) {
             $result['role'] = $result['user_type'];
@@ -64,6 +96,10 @@ class User {
         return $stmt->fetch(PDO::FETCH_ASSOC) !== false;
     }
 
+    // ──────────────────────────────────────────────
+    // User Creation
+    // ──────────────────────────────────────────────
+
     /**
      * Create a new user row.
      * $userData keys: email, password (hashed), user_type, full_name
@@ -81,7 +117,7 @@ class User {
             $userId,
             $userData['email'],
             $userData['password'],
-            $userData['user_type'],   // DB column — stores 'admin' | 'doctor' | 'user'
+            $userData['user_type'],
             $userData['full_name'] ?? '',
         ]);
 
@@ -89,18 +125,57 @@ class User {
     }
 
     /**
-     * Hash a password with bcrypt.
+     * Create the initial doctor_profiles skeleton row when a doctor registers.
+     * Profile starts at: profile_status = 'draft', registration_step = 'basic_info'
+     *
+     * @param string $userId  The users.id (CHAR 36 UUID)
      */
-    public static function hashPassword(string $password): string {
-        return password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
+    public function createDoctorProfile(string $userId): void {
+        $stmt = $this->db->prepare('
+            INSERT INTO doctor_profiles (
+                user_id, profile_status, registration_step,
+                gender, primary_specialty,
+                license_number, medical_council, languages_spoken,
+                video_enabled, audio_enabled, consultation_duration,
+                buffer_time, is_active, instant_booking_enabled,
+                created_at, updated_at
+            ) VALUES (?, "draft", "basic_info", ?, ?, ?, ?, ?, 1, 1, ?, ?, 1, 0, UTC_TIMESTAMP(), UTC_TIMESTAMP())
+        ');
+
+        $stmt->execute([
+            $userId,
+            'other',
+            'General Practice',
+            'TEMP_' . substr($userId, 0, 8),
+            'Other',
+            json_encode(['English']),
+            '60min',
+            '10min',
+        ]);
     }
 
     /**
-     * Verify a plaintext password against a stored hash.
+     * Create the initial client_profiles skeleton row when a client registers.
+     *
+     * @param string $userId  The users.id (CHAR 36 UUID)
      */
-    public static function verifyPassword(string $password, string $hash): bool {
-        return password_verify($password, $hash);
+    public function createClientProfile(string $userId): void {
+        $stmt = $this->db->prepare('
+            INSERT INTO client_profiles (
+                user_id, gender,
+                created_at, updated_at
+            ) VALUES (?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
+        ');
+
+        $stmt->execute([
+            $userId,
+            'other',
+        ]);
     }
+
+    // ──────────────────────────────────────────────
+    // Email Verification
+    // ──────────────────────────────────────────────
 
     /**
      * Store an OTP hash for email verification.
@@ -146,8 +221,7 @@ class User {
             SELECT id, email, password, user_type, full_name,
                    is_active, is_email_verified,
                    email_verification_otp, email_verification_expires,
-                   created_at, updated_at,
-                   is_profile_complete, is_profile_approved, onboarding_step
+                   created_at, updated_at
             FROM users
             WHERE email = ?
             LIMIT 1
@@ -160,54 +234,47 @@ class User {
         return $result ?: null;
     }
 
-    /**
-     * Create the initial doctor_profiles skeleton row when a doctor registers.
-     * The profile will be fully completed via the /api/doctors/setup endpoint.
-     *
-     * @param string $userId  The users.id (CHAR 36 UUID)
-     */
-    public function createDoctorProfile(string $userId): void {
-        $stmt = $this->db->prepare('
-            INSERT INTO doctor_profiles (
-                user_id, gender, primary_specialty,
-                license_number, medical_council, languages_spoken,
-                video_enabled, audio_enabled, consultation_duration,
-                buffer_time, is_active, instant_booking_enabled,
-                onboarding_current_step, onboarding_percentage, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, 1, 1, ?, ?, 1, 0, 1, 0, UTC_TIMESTAMP(), UTC_TIMESTAMP())
-        ');
+    // ──────────────────────────────────────────────
+    // Password Management
+    // ──────────────────────────────────────────────
 
-        $stmt->execute([
-            $userId,
-            'other',
-            'General Practice',
-            'TEMP_' . substr($userId, 0, 8),
-            'Other',
-            json_encode(['English']),
-            '60min',
-            '10min',
-        ]);
+    /**
+     * Hash a password with bcrypt.
+     */
+    public static function hashPassword(string $password): string {
+        return password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
     }
 
     /**
-     * Create the initial client_profiles skeleton row when a client registers.
-     * The profile will be fully completed via the /api/clients/setup endpoint.
-     *
-     * @param string $userId  The users.id (CHAR 36 UUID)
+     * Verify a plaintext password against a stored hash.
      */
-    public function createClientProfile(string $userId): void {
-        $stmt = $this->db->prepare('
-            INSERT INTO client_profiles (
-                user_id, gender,
-                created_at, updated_at
-            ) VALUES (?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())
-        ');
-
-        $stmt->execute([
-            $userId,
-            'other',
-        ]);
+    public static function verifyPassword(string $password, string $hash): bool {
+        return password_verify($password, $hash);
     }
+
+    // ──────────────────────────────────────────────
+    // Profile Completion (DEPRECATED)
+    // ──────────────────────────────────────────────
+
+    /**
+     * Update is_profile_completed flag for a user.
+     * 
+     * @deprecated This method is deprecated. Use ProfileStatusService to manage
+     *             profile status via doctor_profiles.profile_status instead.
+     *             Kept for backward compatibility during migration.
+     */
+    public function updateProfileCompletion(string $userId, bool $completed): bool {
+        $stmt = $this->db->prepare('
+            UPDATE users
+            SET is_profile_completed = ?, updated_at = UTC_TIMESTAMP()
+            WHERE id = ?
+        ');
+        return $stmt->execute([$completed ? 1 : 0, $userId]);
+    }
+
+    // ──────────────────────────────────────────────
+    // Helpers
+    // ──────────────────────────────────────────────
 
     /**
      * Generate a v4 UUID.
@@ -217,18 +284,5 @@ class User {
         $data[6] = chr(ord($data[6]) & 0x0f | 0x40);
         $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
         return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
-    }
-
-    /**
-     * Update is_profile_completed flag for a user.
-     * Called when onboarding is submitted (after payout).
-     */
-    public function updateProfileCompletion(string $userId, bool $completed): bool {
-        $stmt = $this->db->prepare('
-            UPDATE users
-            SET is_profile_completed = ?, updated_at = UTC_TIMESTAMP()
-            WHERE id = ?
-        ');
-        return $stmt->execute([$completed ? 1 : 0, $userId]);
     }
 }
